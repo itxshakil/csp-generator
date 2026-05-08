@@ -2,10 +2,6 @@
 
 declare(strict_types=1);
 
-const FROM_EMAIL     = 'hello@shakiltech.com';
-const FROM_NAME      = 'Shakil — CSP Generator';
-const SUBJECT        = 'Your Laravel CSP Quick Reference Guide';
-const PDF_PATH       = __DIR__ . '/laravel-csp-guide.pdf';
 const CSV_PATH       = __DIR__ . '/data/emails.csv';
 const RATE_FILE      = __DIR__ . '/data/rate.json';
 const REDIRECT_URL   = 'https://csp-generator.shakiltech.com';
@@ -80,8 +76,7 @@ if ($isJson) {
         exit;
     }
     save_to_csv($name, $email);
-    $sent = send_pdf($email, $name);
-    echo json_encode(['ok' => true, 'sent' => $sent]);
+    echo json_encode(['ok' => true]);
     exit;
 }
 
@@ -93,10 +88,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 // HTML form POST
 $success = false;
-$sent    = false;
 if (!$error) {
     save_to_csv($name, $email);
-    $sent    = send_pdf($email, $name);
     $success = true;
 }
 
@@ -203,9 +196,9 @@ h1{font-size:1.5rem;font-weight:600;letter-spacing:-0.025em;color:var(--dark);ma
   </a>
 
   <div class="icon-wrap ok">✓</div>
-  <h1>Check your inbox, <?= $safeName ?>!</h1>
+  <h1>You're on the list, <?= $safeName ?>!</h1>
   <p class="sub">
-    The Laravel CSP Quick Reference is on its way to <strong><?= $safeEmail ?></strong>.<?= $sent ? '' : "<br>Use the download link below if it doesn't arrive." ?>
+    Thanks for signing up with <strong><?= $safeEmail ?></strong>. Download the guide below.
   </p>
 
   <div class="checklist">
@@ -307,34 +300,4 @@ function save_to_csv(string $name, string $email): void
         flock($fp, LOCK_UN);
     }
     fclose($fp);
-}
-
-function send_pdf(string $to, string $name): bool
-{
-    if (!file_exists(PDF_PATH)) return false;
-    $firstName  = explode(' ', $name)[0];
-    $pdf        = file_get_contents(PDF_PATH);
-    if ($pdf === false) return false;
-    $b64        = base64_encode($pdf);
-    $boundary   = '----=_Part_' . md5(uniqid('', true));
-    $alt        = "alt_{$boundary}";
-
-    $headers  = "From: " . FROM_NAME . " <" . FROM_EMAIL . ">\r\n";
-    $headers .= "Reply-To: " . FROM_EMAIL . "\r\n";
-    $headers .= "MIME-Version: 1.0\r\n";
-    $headers .= "Content-Type: multipart/mixed; boundary=\"{$boundary}\"\r\n";
-
-    $txt = "Hi {$firstName},\n\nYour Laravel CSP Quick Reference Guide is attached.\n\nWhat's inside:\n• All 13 directives with plain-English descriptions\n• 12-item pre-enforcement checklist\n• 5 common mistakes and how to avoid them\n• Quick-start snippets for Blade, Vite and Livewire\n\nConfigure your policy:\n→ https://csp-generator.shakiltech.com\n\n— Shakil";
-
-    $htm = "<!DOCTYPE html><html><head><meta charset='UTF-8'><style>body{font-family:Helvetica,Arial,sans-serif;background:#F8F7F4;margin:0;padding:0}.w{max-width:500px;margin:0 auto;padding:24px 16px}.c{background:#fff;border:1px solid #E5E3DC;border-radius:12px;overflow:hidden}.bar{height:3px;background:#E8251A}.b{padding:28px}h1{color:#1A1523;font-size:19px;font-weight:600;margin:0 0 5px}h1 span{color:#E8251A}.s{color:#4A4560;font-size:14px;line-height:1.6;margin:0 0 18px}.i{display:flex;gap:8px;margin-bottom:9px}.d{width:5px;height:5px;border-radius:50%;background:#E8251A;flex-shrink:0;margin-top:6px}.t{color:#4A4560;font-size:13.5px;line-height:1.5}.cta{display:block;text-align:center;background:#E8251A;color:#fff;text-decoration:none;border-radius:8px;padding:11px 18px;font-size:14px;font-weight:600;margin:20px 0 0}.f{margin-top:20px;padding-top:16px;border-top:1px solid #E5E3DC}.f p{color:#8B86A0;font-size:12px;line-height:1.6;margin:0}.f a{color:#6B6487}</style></head><body><div class='w'><div class='c'><div class='bar'></div><div class='b'><h1>Laravel CSP <span>Quick Reference</span></h1><p class='s'>Hi {$firstName}, your guide is attached.</p><div class='i'><div class='d'></div><div class='t'>All 13 CSP directives with descriptions</div></div><div class='i'><div class='d'></div><div class='t'>12-item pre-enforcement checklist</div></div><div class='i'><div class='d'></div><div class='t'>5 common mistakes to avoid</div></div><div class='i'><div class='d'></div><div class='t'>Quick-start Blade, Vite & Livewire snippets</div></div><a class='cta' href='https://csp-generator.shakiltech.com'>Configure your policy →</a><div class='f'><p>You signed up at csp-generator.shakiltech.com. <a href='https://blog.shakiltech.com'>Read the full blog post</a>.</p></div></div></div></div></body></html>";
-
-    $msg  = "--{$boundary}\r\nContent-Type: multipart/alternative; boundary=\"{$alt}\"\r\n\r\n";
-    $msg .= "--{$alt}\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: 7bit\r\n\r\n{$txt}\r\n\r\n";
-    $msg .= "--{$alt}\r\nContent-Type: text/html; charset=UTF-8\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\n";
-    $msg .= quoted_printable_encode($htm) . "\r\n\r\n--{$alt}--\r\n";
-    $msg .= "--{$boundary}\r\nContent-Type: application/pdf; name=\"laravel-csp-guide.pdf\"\r\n";
-    $msg .= "Content-Transfer-Encoding: base64\r\nContent-Disposition: attachment; filename=\"laravel-csp-guide.pdf\"\r\n\r\n";
-    $msg .= chunk_split($b64) . "\r\n--{$boundary}--";
-
-    return mail($to, SUBJECT, $msg, $headers);
 }

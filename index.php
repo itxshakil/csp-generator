@@ -613,8 +613,8 @@ footer{border-top:1px solid var(--border);background:var(--white);padding:1.75re
       </div>
       <div class="guide-success" id="guide-success">
         <div class="success-icon">✓</div>
-        <div class="success-title">Check your inbox</div>
-        <div class="success-sub">The PDF is on its way. Download it directly below while you wait.</div>
+        <div class="success-title">You're on the list</div>
+        <div class="success-sub">Thanks for signing up. Download the guide below.</div>
         <a class="download-btn" href="https://csp-generator.shakiltech.com/laravel-csp-guide.pdf" download>↓ Download PDF</a>
       </div>
     </div>
