@@ -745,6 +745,8 @@ function applyPreset(name) {
   if(pc) pc.classList.add('active');
   render();
   saveState();
+  track('select_preset',{preset:name});
+  if(typeof clarity==='function') clarity('set','preset',name);
 }
 
 function tog(key) {
@@ -754,6 +756,7 @@ function tog(key) {
   document.querySelectorAll('.preset').forEach(c=>c.classList.remove('active'));
   render();
   saveState();
+  track('toggle_feature',{feature:key,enabled:S[key]});
 }
 
 function toggleSec(id) {
@@ -766,6 +769,7 @@ function setTab(t) {
   currentTab = t;
   document.querySelectorAll('.otab').forEach((el,i)=>el.classList.toggle('active',['header','php','checklist','reference'][i]===t));
   render();
+  track('switch_tab',{tab:t});
 }
 
 // ── Tag inputs ────────────────────────────────────────────────────────────────
@@ -860,6 +864,7 @@ function copyEl(id,btnId) {
     const b=document.getElementById(btnId);if(!b)return;
     const o=b.textContent;b.textContent='Copied!';b.classList.add('ok');
     setTimeout(()=>{b.textContent=o;b.classList.remove('ok');},1800);
+    track('copy_output',{element:id});
   });
 }
 
@@ -867,6 +872,7 @@ function dlFile(id,name) {
   const a=document.createElement('a');
   a.href='data:text/plain;charset=utf-8,'+encodeURIComponent(document.getElementById(id).innerText);
   a.download=name;a.click();
+  track('download_middleware');
 }
 
 function pad(s,n){return s+' '.repeat(Math.max(0,n-s.length));}
@@ -874,6 +880,7 @@ function pad(s,n){return s+' '.repeat(Math.max(0,n-s.length));}
 // ── Render ────────────────────────────────────────────────────────────────────
 function render() {
   const dirs=buildDirs(),pol=dirStr(dirs),sc=score(),sm=scoreMeta(sc);
+  if(sm.l!==_lastGrade){_lastGrade=sm.l;track('policy_score',{score:sc,grade:sm.l});if(typeof clarity==='function')clarity('set','score_grade',sm.l);}
   const hn=S.reportonly?'Content-Security-Policy-Report-Only':'Content-Security-Policy';
   const body=document.getElementById('out-body');
 
@@ -1030,6 +1037,11 @@ ${[['MDN CSP Reference','https://developer.mozilla.org/en-US/docs/Web/HTTP/Heade
 }
 
 // ── Guide form ────────────────────────────────────────────────────────────────
+function track(event,params){
+  if(typeof gtag==='function') gtag('event',event,params||{});
+  if(typeof clarity==='function') clarity('event',event);
+}
+let _lastGrade='';
 const _formTs=Date.now();
 async function submitGuide() {
   const email=document.getElementById('g-email').value;
@@ -1052,6 +1064,8 @@ async function submitGuide() {
   }
   document.getElementById('guide-form').style.display='none';
   document.getElementById('guide-success').style.display='block';
+  track('guide_signup');
+  if(typeof clarity==='function') clarity('set','lead','true');
 }
 
 (function(){
