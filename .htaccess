@@ -1,0 +1,59 @@
+Options -Indexes
+
+# -------------------------------------------------------
+# Route all requests to index.php (clean URLs)
+# -------------------------------------------------------
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # Block direct access to internal PHP helpers
+    RewriteRule ^icon\.php$       - [L]
+    RewriteRule ^save-email\.php$ - [L]
+
+    # Let static assets pass through
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^ index.php [L]
+</IfModule>
+
+# -------------------------------------------------------
+# Block access to sensitive files
+# -------------------------------------------------------
+<FilesMatch "\.(csv|json|log|sh|bak|sql|env)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# -------------------------------------------------------
+# Security headers (supplement what index.php sets)
+# -------------------------------------------------------
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "DENY"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+</IfModule>
+
+# -------------------------------------------------------
+# Compression
+# -------------------------------------------------------
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json image/svg+xml
+</IfModule>
+
+# -------------------------------------------------------
+# Cache static assets
+# -------------------------------------------------------
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/svg+xml    "access plus 1 year"
+    ExpiresByType image/png        "access plus 1 year"
+    ExpiresByType application/json "access plus 1 day"
+    ExpiresByType text/javascript  "access plus 1 week"
+</IfModule>
