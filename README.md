@@ -1,4 +1,4 @@
-# Laravel CSP Generator
+# [Laravel CSP Generator](https://csp-generator.shakiltech.com)
 
 **A free, visual Content Security Policy builder for Laravel apps.**
 
