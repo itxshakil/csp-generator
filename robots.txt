@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://csp-generator.shakiltech.com/sitemap.xml
