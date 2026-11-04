@@ -313,3 +313,10 @@ footer{border-top:1px solid var(--border);background:var(--white);padding:1.75re
 .form-input.is-invalid{border-color:var(--red)}
 :where(button.otab){background:none;border:none;border-bottom:2px solid transparent}
 
+.vite-block{padding-bottom:0.7rem;border-bottom:1px solid var(--border);margin-top:0}
+.text-inp{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:0.5rem 0.7rem;font-family:var(--mono);font-size:0.75rem;color:var(--dark);outline:none;transition:border-color 0.15s,box-shadow 0.15s}
+.text-inp:focus{border-color:var(--red);box-shadow:0 0 0 3px var(--red-bg)}
+.text-inp::placeholder{color:var(--light2)}
+.text-inp[aria-invalid="true"]{border-color:var(--amber)}
+.field-msg{font-size:0.72rem;color:var(--amber);margin-top:0.3rem;line-height:1.4}
+.field-msg:empty{display:none}

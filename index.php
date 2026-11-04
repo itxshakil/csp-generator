@@ -119,10 +119,15 @@ $n = htmlspecialchars($nonce, ENT_QUOTES);
       <div class="cfg-body">
         <div class="trow">
           <div class="trow-info">
-            <div class="trow-name">Local development <div class="tip"><span class="tip-icon">?</span><div class="tip-box">Adds Vite's HMR WebSocket to connect-src and removes upgrade-insecure-requests. Never ship this to production.</div></div></div>
-            <div class="trow-desc">Enables Vite HMR WebSocket</div>
+            <div class="trow-name">Local development <div class="tip"><span class="tip-icon">?</span><div class="tip-box">Adds the Vite dev server to script-src and style-src, its HMR WebSocket to connect-src, and removes upgrade-insecure-requests. Never ship this to production.</div></div></div>
+            <div class="trow-desc">Allows the Vite dev server and its HMR WebSocket</div>
           </div>
           <button type="button" class="toggle" id="t-local" data-toggle="local"></button>
+        </div>
+        <div class="dir-block vite-block is-hidden" id="vite-block">
+          <div class="dir-lbl"><label class="dir-name" for="vite-origin">Vite dev server</label><span class="dir-hint">Herd: https://app.test:5173</span></div>
+          <input class="text-inp" id="vite-origin" type="text" inputmode="url" autocomplete="off" spellcheck="false" placeholder="http://localhost:5173" aria-describedby="vite-msg">
+          <p class="field-msg" id="vite-msg" aria-live="polite"></p>
         </div>
         <div class="trow">
           <div class="trow-info">

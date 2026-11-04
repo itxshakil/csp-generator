@@ -8,6 +8,7 @@ export const DEFAULT_STATE = {
   local: false, reportonly: false, reporting: true,
   jsdelivr: true, cdnjs: true, tawk: false,
   gfonts: true, ga: false, gtm: false, livewire: false,
+  viteOrigin: 'http://localhost:5173',
   tags: { script: [], style: [], img: [], frame: [], connect: [] },
 };
 
@@ -19,17 +20,42 @@ export const PRESETS = {
 
 const SELF = "'self'";
 const NONCE = "'nonce-{$nonce}'";
+const LOOPBACK = /^(localhost|127\.0\.0\.1)(:|$)/i;
+const HOSTNAME = /^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)*[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/i;
+
+// Turns "app.test:5173", "https://app.test:5173/path" etc. into "https://app.test:5173".
+export function normalizeOrigin(raw) {
+  const input = String(raw ?? '').trim();
+  const fail = error => ({ value: null, error });
+  if (!input) return fail('Enter a host, for example localhost:5173.');
+  if (/[\s'"<>`]/.test(input)) return fail('A host cannot contain spaces, quotes or angle brackets.');
+  const withScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(input) ? input : (LOOPBACK.test(input) ? 'http://' : 'https://') + input;
+  let url;
+  try {
+    url = new URL(withScheme);
+  } catch {
+    return fail('That is not a valid host.');
+  }
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') return fail('Use http:// or https://.');
+  if (!HOSTNAME.test(url.hostname)) return fail('That is not a valid host.');
+  return { value: url.origin, error: null };
+}
+
+export function wsOrigin(origin) {
+  return origin.replace(/^http/, 'ws');
+}
 
 export function buildDirectives(state) {
   const on = (flag, sources) => (flag ? sources : []);
-  const script = [SELF, NONCE,
+  const vite = state.local ? [normalizeOrigin(state.viteOrigin).value ?? DEFAULT_STATE.viteOrigin] : [];
+  const script = [SELF, NONCE, ...vite,
     ...on(state.jsdelivr, ['https://cdn.jsdelivr.net']),
     ...on(state.cdnjs, ['https://cdnjs.cloudflare.com']),
     ...on(state.tawk, ['https://embed.tawk.to']),
     ...on(state.ga, ['https://www.google-analytics.com']),
     ...on(state.gtm, ['https://www.googletagmanager.com']),
     ...state.tags.script];
-  const style = [SELF, NONCE,
+  const style = [SELF, NONCE, ...vite,
     ...on(state.gfonts, ['https://fonts.googleapis.com']),
     ...on(state.cdnjs, ['https://cdnjs.cloudflare.com']),
     ...state.tags.style];
@@ -39,7 +65,7 @@ export function buildDirectives(state) {
   const img = [SELF, 'data:', ...on(state.cdnjs, ['https://cdnjs.cloudflare.com']), ...state.tags.img];
   const frame = [SELF, ...state.tags.frame];
   const connect = [SELF,
-    ...on(state.local, ['ws://localhost:5173', 'wss://localhost:5173']),
+    ...vite.flatMap(origin => [wsOrigin(origin), origin]),
     ...on(state.ga, ['https://www.google-analytics.com']),
     ...state.tags.connect];
 
