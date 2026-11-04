@@ -146,3 +146,60 @@ export function grade(n) {
   if (n >= 40) return { label: 'C', cls: 'grade-c' };
   return { label: 'D', cls: 'grade-d' };
 }
+
+export function headerName(state) {
+  return state.reportOnly ? 'Content-Security-Policy-Report-Only' : 'Content-Security-Policy';
+}
+
+const encoder = new TextEncoder();
+
+export function headerBytes(state, env = 'production') {
+  return encoder.encode(`${headerName(state)}: ${policyString(buildDirectives(state, env))}`).length;
+}
+
+// 4 KB is the default proxy buffer in nginx-proxy-manager; 8 KB is a common hard limit for a single header line.
+export const SIZE_WARN = 4096;
+export const SIZE_OVER = 8192;
+
+export function sizeLevel(bytes) {
+  if (bytes > SIZE_OVER) return 'over';
+  if (bytes > SIZE_WARN) return 'warn';
+  return 'ok';
+}
+
+// Hosts that serve arbitrary user-controlled or legacy JavaScript, so allowing them lets an attacker load a script gadget.
+const BYPASS_HOSTS = ['https://cdn.jsdelivr.net', 'https://cdnjs.cloudflare.com', 'https://unpkg.com', 'https://*.googleapis.com'];
+
+// Grades the production policy only. Every point lost is listed with the reason.
+export function scorePolicy(state) {
+  const dirs = buildDirectives(state, 'production');
+  const script = dirs.find(d => d.name === 'script-src');
+  const deductions = [];
+  const deduct = (id, label, points) => deductions.push({ id, label, points });
+
+  if (script.sources.includes(UNSAFE_EVAL)) {
+    const who = script.reasons[UNSAFE_EVAL].map(r => r.split(':')[0]).join(', ');
+    deduct('unsafe-eval', `'unsafe-eval' in script-src, needed by ${who}`, 25);
+  }
+  if (dirs.find(d => d.name === 'style-src-attr').sources.includes(UNSAFE_INLINE)) {
+    deduct('style-attr', "'unsafe-inline' in style-src-attr allows injected style attributes", 10);
+  }
+  let bypass = 0;
+  for (const host of script.sources.filter(s => BYPASS_HOSTS.includes(s))) {
+    const points = Math.min(10, 30 - bypass);
+    if (points <= 0) break;
+    bypass += points;
+    deduct('bypass-host', `${host} in script-src serves code an attacker can reuse to bypass the policy`, points);
+  }
+  let wild = 0;
+  for (const host of script.sources.filter(s => s.includes('://*.') && !BYPASS_HOSTS.includes(s))) {
+    const points = Math.min(5, 15 - wild);
+    if (points <= 0) break;
+    wild += points;
+    deduct('wildcard', `${host} in script-src allows every subdomain`, points);
+  }
+  if (state.reportOnly) deduct('report-only', 'Report-only mode: nothing is blocked yet', 20);
+  if (!state.reporting) deduct('no-reporting', 'Reporting is off, so you will not see what breaks', 15);
+
+  return { score: Math.max(0, 100 - deductions.reduce((sum, d) => sum + d.points, 0)), deductions };
+}
