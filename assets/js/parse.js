@@ -2,6 +2,7 @@
 import { INTEGRATIONS } from './integrations.js';
 import { normalizeSource, covers } from './sources.js';
 import { CUSTOM_KINDS, DEFAULT_STATE, sanitizeState } from './state.js';
+import { buildDirectives } from './policy.js';
 
 // ── Parsing a policy ────────────────────────────────────────────────────────
 const HEADER_PREFIX = /^\s*content-security-policy(-report-only)?\s*:\s*/i;
@@ -119,4 +120,119 @@ export function importPolicy(text) {
     integrations: matched, reportOnly, reporting, inlineStyleAttrs, custom,
   });
   return { state, matched, custom: state.custom, unknown, notes };
+}
+
+// ── Explaining a violation ──────────────────────────────────────────────────
+const NOISE_SCHEMES = ['chrome-extension:', 'moz-extension:', 'safari-web-extension:', 'safari-extension:', 'about:'];
+const KIND_NOUN = { script: 'script', style: 'stylesheet or style', font: 'font', img: 'image', media: 'media file', frame: 'frame', connect: 'connection', form: 'form submission', worker: 'worker' };
+const VERB_KIND = [[/script/i, 'script'], [/style ?sheet|style/i, 'style'], [/font/i, 'font'], [/image/i, 'img'], [/media/i, 'media'], [/connect/i, 'connect'], [/frame/i, 'frame'], [/worker/i, 'worker'], [/form/i, 'form']];
+
+const firstToken = s => String(s ?? '').trim().split(/\s+/)[0].toLowerCase();
+
+// Pulls {directive, blocked, verb} out of a console message or a report body. Null when it is neither.
+function readViolation(text) {
+  const t = String(text ?? '').trim();
+  if (t.startsWith('{') || t.startsWith('[')) {
+    let data;
+    try {
+      data = JSON.parse(t);
+    } catch {
+      return null;
+    }
+    const body = Array.isArray(data)
+      ? data.find(r => r && r.type === 'csp-violation' && r.body && typeof r.body === 'object')?.body
+      : (data && typeof data['csp-report'] === 'object' ? data['csp-report'] : data);
+    if (!body || typeof body !== 'object') return null;
+    const directive = firstToken(body.effectiveDirective ?? body['effective-directive'] ?? body['violated-directive'] ?? body.violatedDirective);
+    const blocked = String(body.blockedURL ?? body['blocked-uri'] ?? body.blockedURI ?? '');
+    return directive ? { directive, blocked, verb: '' } : null;
+  }
+  const chrome = /Refused to ([a-z ]+?)(?: '([^']*)')? because it violates the following Content Security Policy directive: "([^"]+)"/i.exec(t);
+  if (chrome) {
+    const verb = chrome[1];
+    const blocked = /inline/i.test(verb) ? 'inline' : /evaluate|eval/i.test(verb) ? 'eval' : (chrome[2] ?? '');
+    return { directive: firstToken(chrome[3]), blocked, verb };
+  }
+  if (/Refused to evaluate a string as JavaScript/i.test(t)) {
+    const d = /directive: "([^"]+)"/i.exec(t);
+    return { directive: firstToken(d?.[1] ?? 'script-src'), blocked: 'eval', verb: 'evaluate' };
+  }
+  const firefox = /blocked the loading of a resource(?: \(([\w-]+)\))? at (\S+?)(?: \(\W?([\w-]+)\W?\))? because it violates the following directive: [“"]([^”"]+)[”"]/i.exec(t);
+  if (firefox) {
+    const at = firefox[2];
+    return { directive: firstToken(firefox[1] ?? firefox[3] ?? firefox[4]), blocked: at === 'inline' ? 'inline' : at === 'eval' ? 'eval' : at, verb: '' };
+  }
+  const safari = /Refused to ([a-z ]+?) (\S+) because it does not appear in the ([\w-]+) directive/i.exec(t);
+  if (safari) return { directive: safari[3].toLowerCase(), blocked: safari[2], verb: safari[1] };
+  const safariInline = /Refused to (execute|apply) a (script|style)[^.]*'unsafe-inline' does not appear in the ([\w-]+) directive/i.exec(t);
+  if (safariInline) return { directive: safariInline[3].toLowerCase(), blocked: 'inline', verb: safariInline[1] };
+  return null;
+}
+
+function kindOf(directive, verb) {
+  if (DIRECTIVE_KIND[directive]) return DIRECTIVE_KIND[directive];
+  if (directive === 'style-src-attr') return 'style';
+  if (directive === 'script-src-attr') return 'script';
+  return VERB_KIND.find(([re]) => re.test(verb))?.[1] ?? null;
+}
+
+function originOf(url) {
+  try {
+    const u = new URL(url);
+    return ['http:', 'https:', 'ws:', 'wss:'].includes(u.protocol) ? `${u.protocol}//${u.host}` : null;
+  } catch {
+    return null;
+  }
+}
+
+// The most specific integration wins: a blocked player.vimeo.com frame is Vimeo, even though Intercom lists it too.
+function findIntegration(kind, origin) {
+  const bySize = [...INTEGRATIONS].sort((a, b) => integrationSources(a).length - integrationSources(b).length);
+  const exact = bySize.find(i => (i.sources[kind] ?? []).some(([s]) => s === origin));
+  return exact ?? bySize.find(i => (i.sources[kind] ?? []).some(([s]) => covers(s, origin)));
+}
+
+export function explainViolation(text, state) {
+  const v = readViolation(text);
+  if (!v) return { ok: false, error: 'Paste a console message that starts with "Refused to" or "Content-Security-Policy:", or a violation report in JSON.' };
+  const { directive, blocked } = v;
+  const kind = kindOf(directive, v.verb);
+  const noun = KIND_NOUN[kind] ?? 'resource';
+  const base = { ok: true, blocked, directive, kind, integration: null };
+
+  if (blocked === 'inline' || directive.endsWith('-attr')) {
+    const attr = directive.endsWith('-attr');
+    const advice = attr
+      ? (kind === 'style'
+        ? 'Move the style="" attribute into a CSS class, or set the style from JavaScript (element.style is allowed). Only if a widget needs it, allow inline style attributes under Advanced.'
+        : 'Move the onclick="" style handler into a script file and attach it with addEventListener.')
+      : `Add nonce="{{ $cspNonce }}" to the inline <${kind === 'style' ? 'style' : 'script'}> tag, or move its code into a file. If it is an on*= handler or style="" attribute, move it into a script file or a CSS class.`;
+    return { ...base, plain: `The browser blocked inline ${kind === 'style' ? 'CSS' : 'JavaScript'} because ${directive} only runs code that carries your nonce.`, fix: { type: 'inline', advice } };
+  }
+  if (blocked === 'eval') {
+    return {
+      ...base,
+      plain: `Something called eval() or new Function(), which ${directive} blocks without 'unsafe-eval'.`,
+      fix: { type: 'eval', advice: "If it is Alpine, Livewire 3 or Filament, turn that option on under Stack (or switch to the @alpinejs/csp build). Otherwise find the library that evaluates strings: 'unsafe-eval' weakens the policy." },
+    };
+  }
+  if (NOISE_SCHEMES.some(p => blocked.startsWith(p))) {
+    return { ...base, plain: 'A browser extension tried to inject code into your page. Your policy blocked it, which is correct.', fix: { type: 'noise', advice: 'Ignore it. The generated report controller already drops extension reports.' } };
+  }
+  const origin = originOf(blocked);
+  if (!origin || !kind) {
+    return { ...base, plain: `The browser blocked ${blocked ? `"${blocked}"` : 'a resource'} under ${directive}.`, fix: { type: 'none', advice: blocked.startsWith('javascript:') ? 'A javascript: URL tried to run. Replace it with an event listener in a script file.' : 'Allow data: or blob: in this directive only if you know which code creates them.' } };
+  }
+  const prodSources = buildDirectives(state, 'production').find(d => d.name === (KIND_DIRECTIVES[kind]?.[0] ?? directive))?.sources ?? [];
+  if (allowedIn(prodSources, origin)) {
+    return { ...base, plain: `Your current config already allows ${origin} for ${KIND_DIRECTIVES[kind][0]}.`, fix: { type: 'none', advice: 'This report came from an older policy, another environment, or a cached page. Deploy the current policy and check again.' } };
+  }
+  const integration = findIntegration(kind, origin);
+  if (integration) {
+    return { ...base, integration: integration.id, plain: `The browser blocked a ${noun} from ${origin} because ${directive} does not allow it. It belongs to ${integration.name}.`, fix: { type: 'integration', id: integration.id } };
+  }
+  if (!CUSTOM_KINDS.includes(kind)) {
+    return { ...base, plain: `The browser blocked a ${noun} from ${origin} because ${directive} does not allow it.`, fix: { type: 'none', advice: `Add ${origin} to ${directive} by hand if you trust it.` } };
+  }
+  return { ...base, plain: `The browser blocked a ${noun} from ${origin} because ${directive} does not allow it. If you trust this host, allow it.`, fix: { type: 'custom', kind, value: origin } };
 }
