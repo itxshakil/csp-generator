@@ -179,13 +179,14 @@ $faq = faq_items();
 
   <!-- OUTPUT -->
   <div class="output" data-clarity-mask="true">
-    <div class="out-tabs">
-      <button type="button" class="otab active" data-tab="header">HTTP Header</button>
-      <button type="button" class="otab" data-tab="php">PHP Middleware</button>
-      <button type="button" class="otab" data-tab="checklist">Checklist</button>
-      <button type="button" class="otab" data-tab="reference">Reference</button>
+    <div class="out-tabs" role="tablist" aria-label="Output">
+      <button type="button" class="otab active" role="tab" id="tab-header" data-tab="header" aria-selected="true" aria-controls="out-body" tabindex="0">Header</button>
+      <button type="button" class="otab" role="tab" id="tab-laravel" data-tab="laravel" aria-selected="false" aria-controls="out-body" tabindex="-1">Laravel</button>
+      <button type="button" class="otab" role="tab" id="tab-formats" data-tab="formats" aria-selected="false" aria-controls="out-body" tabindex="-1">Other formats</button>
+      <button type="button" class="otab" role="tab" id="tab-checklist" data-tab="checklist" aria-selected="false" aria-controls="out-body" tabindex="-1">Checklist</button>
+      <button type="button" class="otab" role="tab" id="tab-summary" data-tab="summary" aria-selected="false" aria-controls="out-body" tabindex="-1">Summary</button>
     </div>
-    <div class="out-body" id="out-body"></div>
+    <div class="out-body" id="out-body" role="tabpanel" aria-labelledby="tab-header" tabindex="0"></div>
   </div>
 
 </div><!-- /tool -->
