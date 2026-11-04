@@ -236,7 +236,9 @@ function renderChecklistTab() {
       ? '<strong>@livewireScripts([\'nonce\' => $cspNonce])</strong> or <strong>@livewireScriptConfig</strong> — nonce passed'
       : 'Livewire not enabled — if you add it, pass the nonce to <strong>@livewireScripts</strong>' },
     { t: 'ok', tx: '<strong>onclick=""</strong> and event handler attributes removed from templates' },
-    { t: 'ok', tx: '<strong>style=""</strong> attributes replaced with CSS classes' },
+    { t: S.inlineStyleAttrs ? 'warn' : 'ok', tx: S.inlineStyleAttrs
+      ? 'Inline <strong>style=""</strong> attributes allowed. Keep using CSS classes in markup you control.'
+      : '<strong>style=""</strong> attributes replaced with CSS classes' },
     { t: S.reporting ? 'ok' : 'warn', tx: S.reporting
       ? 'Violation report route live with <strong>middleware(\'throttle:5\')</strong>'
       : 'Reporting is off — enable it to catch misconfigurations' },
@@ -271,7 +273,7 @@ function renderReferenceTab() {
     ['script-src', '\'self\' + nonce', 'JavaScript execution. No nonce = blocked.'],
     ['style-src', '\'self\' + nonce', 'CSS base fallback. Also governs @import rules.'],
     ['style-src-elem', '\'self\' + nonce', 'link rel=stylesheet tags and style blocks.'],
-    ['style-src-attr', '\'none\'', 'Inline style= attributes. Always block.'],
+    ['style-src-attr', '\'none\'', 'Inline style= attributes. Block unless a widget needs them.'],
     ['font-src', '\'self\' data:', 'Font files.'],
     ['img-src', '\'self\' data:', 'Image loading.'],
     ['frame-src', '\'self\'', 'iframe sources.'],
