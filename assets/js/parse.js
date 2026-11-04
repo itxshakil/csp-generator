@@ -186,7 +186,7 @@ function originOf(url) {
 }
 
 // The most specific integration wins: a blocked player.vimeo.com frame is Vimeo, even though Intercom lists it too.
-function findIntegration(kind, origin) {
+export function findIntegration(kind, origin) {
   const bySize = [...INTEGRATIONS].sort((a, b) => integrationSources(a).length - integrationSources(b).length);
   const exact = bySize.find(i => (i.sources[kind] ?? []).some(([s]) => s === origin));
   return exact ?? bySize.find(i => (i.sources[kind] ?? []).some(([s]) => covers(s, origin)));
