@@ -1,3 +1,13 @@
+<?php
+
+declare(strict_types=1);
+
+require_once __DIR__ . '/lib/site-headers.php';
+
+$nonce = site_nonce();
+send_site_headers($nonce, request_origin());
+$n = htmlspecialchars($nonce, ENT_QUOTES);
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -38,10 +48,10 @@
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is a Content Security Policy (CSP)?","acceptedAnswer":{"@type":"Answer","text":"A Content Security Policy is an HTTP response header that tells browsers which sources of scripts, styles, images, and other content are allowed to load on your page. It is your primary defense against cross-site scripting (XSS) attacks — if a malicious script is injected, the browser refuses to run it because it comes from an unapproved source."}},{"@type":"Question","name":"Should I use report-only mode first?","acceptedAnswer":{"@type":"Answer","text":"Yes, always. Use Content-Security-Policy-Report-Only with a report-to endpoint before enforcing. The browser logs violations but blocks nothing. Run it for 1–2 weeks, fix any legitimate sources being blocked, then switch to enforcing mode."}},{"@type":"Question","name":"Can I use CSP with CDNs or third-party scripts?","acceptedAnswer":{"@type":"Answer","text":"Yes, but carefully. Add the CDN domain to the appropriate directive (e.g. script-src cdn.example.com). Avoid unsafe-inline or wildcard * as they defeat the purpose. Use Subresource Integrity (SRI) hashes for extra protection when loading third-party scripts."}},{"@type":"Question","name":"Does CSP break my existing Laravel app?","acceptedAnswer":{"@type":"Answer","text":"It can — if you have inline scripts or styles without nonces. Use Report-Only mode first. The browser reports violations but blocks nothing. Run it for a week, fix your templates, then enforce."}},{"@type":"Question","name":"My Vite HMR stopped working after adding CSP.","acceptedAnswer":{"@type":"Answer","text":"Two things. First, make sure localhost:5173 (or your Vite port) is in connect-src and script-src. Second, enable the Local Dev toggle in this tool — it adds the WebSocket source automatically."}},{"@type":"Question","name":"Do I need CSP if I already have CSRF protection?","acceptedAnswer":{"@type":"Answer","text":"Yes. They protect against different attacks. CSRF prevents forged requests from other origins. CSP prevents injected scripts from running in your page. Both are needed."}},{"@type":"Question","name":"What's the difference between report-uri and Report-To?","acceptedAnswer":{"@type":"Answer","text":"report-uri is the original directive, widely supported. Report-To is the modern replacement using the Reporting API and supports batching. Use both for maximum coverage until Report-To is universally supported."}},{"@type":"Question","name":"How do I handle CSP with Livewire?","acceptedAnswer":{"@type":"Answer","text":"For Livewire v2, enable the Livewire toggle — it adds the alpine.js nonce and wire: event sources. For Livewire v3, nonce support is built-in via the @nonce blade directive."}}]}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="/assets/app.css">
-<script type="module" src="/assets/js/analytics.js"></script>
-<script type="module" src="/assets/js/ui.js"></script>
+<link rel="stylesheet" nonce="<?= $n ?>" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" nonce="<?= $n ?>" href="/assets/app.css">
+<script type="module" nonce="<?= $n ?>" src="/assets/js/analytics.js"></script>
+<script type="module" nonce="<?= $n ?>" src="/assets/js/ui.js"></script>
 </head>
 <body>
 
