@@ -1,5 +1,5 @@
 // Boot: owns the live state, persistence, and the page-level widgets. Panels get the store passed in.
-import { DEFAULT_STATE, PRESETS, sanitizeState } from './state.js';
+import { DEFAULT_STATE, applyPreset, sanitizeState } from './state.js';
 import { track, clarityTag } from './analytics.js';
 import { initConfig } from './ui-config.js';
 import { initOutput } from './ui-output.js';
@@ -30,11 +30,8 @@ function createStore() {
       save(store.state);
       listeners.forEach(fn => fn());
     },
-    applyPreset(name) {
-      store.update(s => {
-        Object.assign(s, structuredClone(PRESETS[name]));
-        s.custom = structuredClone(DEFAULT_STATE.custom);
-      }, name);
+    applyPreset(name, options) {
+      store.update(s => Object.assign(s, applyPreset(s, name, options)), name);
       track('select_preset', { preset: name });
       clarityTag('preset', name);
     },

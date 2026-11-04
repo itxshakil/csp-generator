@@ -207,7 +207,7 @@ export function initConfig(store) {
 
   // ── Presets, reset, sections ──
   $$('[data-preset]').forEach(b => b.addEventListener('click', () => store.applyPreset(b.dataset.preset)));
-  $('[data-action="reset"]').addEventListener('click', () => store.applyPreset(store.preset || 'strict'));
+  $('[data-action="reset"]').addEventListener('click', () => store.applyPreset(store.preset || 'strict', { reset: true }));
   $$('[data-section]').forEach(head => head.addEventListener('click', () => {
     const open = $('#sec-' + head.dataset.section).classList.toggle('open');
     head.setAttribute('aria-expanded', String(open));
