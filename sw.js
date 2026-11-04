@@ -60,7 +60,8 @@ self.addEventListener('fetch', e => {
   }
   if (url.origin !== location.origin) return;
 
-  if (request.mode === 'navigate' || url.pathname === '/' || url.pathname === '/index.php') {
+  // Only the app itself may write the offline copy of "/"; other pages are cached under their own URL.
+  if (url.pathname === '/' || url.pathname === '/index.php') {
     e.respondWith(networkFirst(request, '/'));
   } else if (url.pathname.startsWith('/assets/') && url.searchParams.has('v')) {
     e.respondWith(cacheFirst(request, CACHE));
