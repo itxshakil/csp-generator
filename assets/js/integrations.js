@@ -232,7 +232,7 @@ export const INTEGRATIONS = [
       script: [['https://cdn.jsdelivr.net', 'Scripts from jsDelivr']],
       style: [['https://cdn.jsdelivr.net', 'Stylesheets from jsDelivr']],
     },
-    note: 'jsDelivr serves any npm package, so an attacker can load a script gadget from it. Pin versions and add integrity hashes.',
+    note: 'Serves any npm package, so an attacker can load a script gadget from it. Pin versions and add integrity hashes.',
   },
   {
     id: 'cdnjs', name: 'cdnjs', category: 'cdn',
@@ -243,7 +243,7 @@ export const INTEGRATIONS = [
       font: [['https://cdnjs.cloudflare.com', 'Icon fonts from cdnjs']],
       img: [['https://cdnjs.cloudflare.com', 'Images from cdnjs']],
     },
-    note: 'cdnjs hosts libraries with known CSP bypasses (old AngularJS). Pin versions and add integrity hashes.',
+    note: 'Hosts libraries with known CSP bypasses (old AngularJS). Pin versions and add integrity hashes.',
   },
   {
     id: 'unpkg', name: 'unpkg', category: 'cdn',
@@ -252,7 +252,7 @@ export const INTEGRATIONS = [
       script: [['https://unpkg.com', 'Scripts from unpkg']],
       style: [['https://unpkg.com', 'Stylesheets from unpkg']],
     },
-    note: 'unpkg serves any npm package, so an attacker can load a script gadget from it. Pin versions and add integrity hashes.',
+    note: 'Serves any npm package, so an attacker can load a script gadget from it. Pin versions and add integrity hashes.',
   },
   {
     id: 'recaptcha', name: 'reCAPTCHA', category: 'bot',
