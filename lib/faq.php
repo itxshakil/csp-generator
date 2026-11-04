@@ -31,7 +31,7 @@ function faq_items(): array
         ],
         [
             'q' => 'My Vite HMR stopped working after adding CSP.',
-            'a_html' => 'Two things. First, make sure <code>Vite::useCspNonce($nonce)</code> is called before <code>$next($request)</code>. Second, in local development the Vite dev server must be allowed in <code>script-src</code> and <code>style-src</code>, and its WebSocket in <code>connect-src</code>. Turn on Local development above and enter your Vite host (for example <code>https://app.test:5173</code> on Herd). Never ship those sources to production.',
+            'a_html' => 'Two things. First, make sure <code>Vite::useCspNonce($nonce)</code> is called before <code>$next($request)</code>. Second, in local development the Vite dev server must be allowed in <code>script-src</code> and <code>style-src</code>, and its WebSocket in <code>connect-src</code>. The generated middleware adds them only when <code>app()->environment(\'local\')</code> is true. Enter your Vite host under Local development above (for example <code>https://app.test:5173</code> on Herd) and switch the Header tab to Local to see that policy.',
         ],
         [
             'q' => 'Do I need CSP if I already have CSRF protection?',
@@ -43,7 +43,7 @@ function faq_items(): array
         ],
         [
             'q' => 'How do I handle CSP with Livewire?',
-            'a_html' => 'For Livewire v2: <code>@livewireScripts([\'nonce\' => $cspNonce])</code>. For Livewire v3: <code>@livewireScriptConfig([\'nonce\' => $cspNonce])</code>. Enable the Livewire integration above and the checklist will remind you.',
+            'a_html' => 'For Livewire v2: <code>@livewireScripts([\'nonce\' => $cspNonce])</code>. For Livewire v3: <code>@livewireScriptConfig([\'nonce\' => $cspNonce])</code>. Livewire 3 also bundles the standard Alpine build, which needs <code>\'unsafe-eval\'</code>. Turn on Livewire 3 under Stack above and the policy, Blade snippets and checklist follow.',
         ],
     ];
 }

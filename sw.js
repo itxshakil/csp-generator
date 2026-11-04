@@ -1,4 +1,4 @@
-const CACHE = 'csp-v2';
+const CACHE = 'csp-v3';
 const FONT_CACHE = 'csp-fonts-v1';
 const SHELL = ['/manifest.json', '/favicon.svg', '/icon.php?s=192', '/icon.php?s=512'];
 
