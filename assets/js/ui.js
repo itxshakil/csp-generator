@@ -1,5 +1,5 @@
 // DOM wiring. The only module that touches the page.
-import { DEFAULT_STATE, PRESETS, TAG_DIRS, TOGGLE_KEYS, buildDirectives, policyString, score, grade } from './policy.js';
+import { DEFAULT_STATE, PRESETS, TAG_DIRS, TOGGLE_KEYS, buildDirectives, policyString, score, grade, normalizeOrigin } from './policy.js';
 import { track, clarityTag } from './analytics.js';
 
 const STORAGE_KEY = 'csp-state';
@@ -28,6 +28,24 @@ function saveState() {
 // ── Toggles, presets, tags ──────────────────────────────────────────────────
 function syncToggles() {
   TOGGLE_KEYS.forEach(k => $('#t-' + k)?.classList.toggle('on', Boolean(S[k])));
+  syncVite();
+}
+
+function syncVite() {
+  $('#vite-block').classList.toggle('is-hidden', !S.local);
+  const inp = $('#vite-origin');
+  if (document.activeElement !== inp) inp.value = S.viteOrigin;
+}
+
+function onViteInput(e) {
+  const { value, error } = normalizeOrigin(e.target.value);
+  const msg = $('#vite-msg');
+  e.target.setAttribute('aria-invalid', String(Boolean(error)));
+  msg.textContent = error ? `${error} Still using ${S.viteOrigin}.` : '';
+  if (!value || value === S.viteOrigin) return;
+  S.viteOrigin = value;
+  render();
+  saveState();
 }
 
 function renderTags() {
@@ -70,6 +88,7 @@ function applyPreset(name) {
 function toggle(key) {
   S[key] = !S[key];
   $('#t-' + key).classList.toggle('on', S[key]);
+  if (key === 'local') syncVite();
   currentPreset = '';
   markPreset('');
   render();
@@ -373,6 +392,8 @@ function wire() {
   $$('[data-toggle]').forEach(el => el.addEventListener('click', () => toggle(el.dataset.toggle)));
   $$('.tag-wrap').forEach(w => w.addEventListener('click', () => $('.tag-inp', w).focus()));
   $$('.tag-inp').forEach(inp => inp.addEventListener('keydown', onTagKey));
+  $('#vite-origin').addEventListener('input', onViteInput);
+  $('#vite-origin').addEventListener('blur', e => { if (e.target.getAttribute('aria-invalid') !== 'true') e.target.value = S.viteOrigin; });
   $$('.faq-q').forEach(b => b.addEventListener('click', () => b.closest('.faq-item').classList.toggle('open')));
   $$('[data-tab]').forEach(el => el.addEventListener('click', () => setTab(el.dataset.tab)));
   $('[data-action="submit-guide"]').addEventListener('click', e => submitGuide(e.currentTarget));
