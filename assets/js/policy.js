@@ -154,7 +154,8 @@ export function headerName(state) {
 const encoder = new TextEncoder();
 
 export function headerBytes(state, env = 'production') {
-  return encoder.encode(`${headerName(state)}: ${policyString(buildDirectives(state, env))}`).length;
+  // A real nonce is 24 base64 characters, not the 8-character template placeholder.
+  return encoder.encode(`${headerName(state)}: ${policyString(buildDirectives(state, env)).replaceAll('{$nonce}', 'x'.repeat(24))}`).length;
 }
 
 // 4 KB is the default proxy buffer in nginx-proxy-manager; 8 KB is a common hard limit for a single header line.

@@ -31,6 +31,14 @@ export const PRESETS = {
 
 export const PRESET_LABELS = { strict: 'Strict', standard: 'Standard', rollout: 'Rollout' };
 
+// A preset sets the policy choices (integrations, stack, reporting, custom hosts) and keeps the facts about
+// your environment (hosting, full-page cache, embedding exceptions, Vite host, rollout dates).
+// `reset` starts from scratch instead.
+export function applyPreset(state, name, { reset = false } = {}) {
+  const base = reset ? structuredClone(DEFAULT_STATE) : structuredClone(state);
+  return { ...base, ...structuredClone(PRESETS[name]), custom: structuredClone(DEFAULT_STATE.custom) };
+}
+
 const BOOLEAN_KEYS = ['reportOnly', 'reporting', 'inlineStyleAttrs', 'fullPageCache'];
 const EMBED_PATH = /^[A-Za-z0-9_./*-]{1,100}$/;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;

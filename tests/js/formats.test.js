@@ -44,7 +44,7 @@ function runMiddlewarePolicy(state, env) {
 namespace Illuminate\\Http { class Request {} }
 namespace Illuminate\\Support\\Facades { class View {} class Vite {} }
 namespace Symfony\\Component\\HttpFoundation { class Response {} }
-namespace App\\Http\\Middleware { class ReplaceCachedCspNonce { const PLACEHOLDER = 'P'; } }
+namespace App\\Http\\Middleware { class ReplaceCachedCspNonce { static function placeholder() { return 'P'; } } }
 namespace { function app() { return new class { function environment($e) { return $e === '${env}'; } }; } }
 `;
     writeFileSync(join(dir, 'stub.php'), stub);
@@ -84,7 +84,7 @@ test('embeds and skipped dashboards reach the middleware', () => {
   const src = F.laravelMiddleware(KITCHEN);
   assert.ok(src.includes("'widget/*' => ['https://partner.example.com'],"));
   assert.ok(src.includes("'telescope*'"));
-  assert.ok(src.includes('ReplaceCachedCspNonce::PLACEHOLDER'));
+  assert.ok(src.includes('ReplaceCachedCspNonce::placeholder()'));
   assert.ok(!F.laravelMiddleware(STATES.strict).includes('ReplaceCachedCspNonce'));
 });
 
@@ -96,12 +96,12 @@ test('meta tag omits frame-ancestors and reporting and uses the Blade nonce', ()
 
 test('apache output contains no nonce; nginx output uses $request_id', () => {
   assert.ok(!F.apacheConfig(STATES.standard, 'production').includes('nonce-'));
-  assert.ok(F.nginxConfig(STATES.standard, 'production').includes("'nonce-$request_id'"));
+  assert.ok(F.nginxConfig(STATES.standard, 'production', 'Tok3nSecret').includes("'nonce-$request_id'"));
 });
 
 test('report-only state uses the Report-Only header name in server formats', () => {
   for (const fn of ['laravelMiddleware', 'pestTest']) assert.ok(F[fn](STATES.rollout).includes('Content-Security-Policy-Report-Only'), fn);
-  for (const fn of ['nginxConfig', 'apacheConfig']) assert.ok(F[fn](STATES.rollout, 'production').includes('Content-Security-Policy-Report-Only'), fn);
+  for (const fn of ['nginxConfig', 'apacheConfig']) assert.ok(F[fn](STATES.rollout, 'production', 'Tok3nSecret').includes('Content-Security-Policy-Report-Only'), fn);
   assert.ok(F.metaTag(STATES.rollout, 'production').includes('cannot be report-only'));
 });
 
@@ -130,7 +130,84 @@ test('report route matches the policy', () => {
 test('no output contains an em dash', () => {
   for (const state of Object.values(STATES)) {
     const all = [...PHP_FILES.map(fn => F[fn](state)), F.laravelBootstrap(state), F.bladeSnippets(state), F.reportRoute(),
-      F.nginxConfig(state, 'production'), F.apacheConfig(state, 'local'), F.metaTag(state, 'production')].join('\n');
+      F.nginxConfig(state, 'production', 'Tok3nSecret'), F.apacheConfig(state, 'local'), F.metaTag(state, 'production')].join('\n');
     assert.ok(!all.includes('—'));
+  }
+});
+
+// ── Final review fixes ──────────────────────────────────────────────────────
+test('C1: sources in a different order per environment do not hang and still match the Header tab', () => {
+  const states = [
+    preset('strict', { custom: { script: ['https://cdn.example.com', 'http://localhost:5173'] } }),
+    preset('strict', { custom: { connect: ['http://localhost:5173', 'ws://localhost:5173'] } }),
+  ];
+  for (const state of states) {
+    for (const env of ['production', 'local']) {
+      assert.equal(runMiddlewarePolicy(state, env), F.headerValue(state, env).replaceAll('{$nonce}', 'NONCE'), env);
+    }
+  }
+});
+
+test('C2: the cached-page placeholder is a secret derived from the app key, and headers are always rewritten', () => {
+  const src = F.nonceReplacementMiddleware();
+  assert.ok(!src.includes("'csp-nonce-placeholder'"), 'no public constant');
+  assert.ok(src.includes("config('app.key')"));
+  assert.ok(F.laravelMiddleware(KITCHEN).includes('ReplaceCachedCspNonce::placeholder()'));
+  const body = src.slice(src.indexOf('public function handle'));
+  assert.ok(body.indexOf('self::HEADERS') < body.indexOf('str_contains($content'), 'headers rewritten before the body check');
+});
+
+test('C2: nginx uses the secret placeholder it is given, never a public one', () => {
+  const out = F.nginxConfig(STATES.standard, 'production', 'Zq7k2m9x');
+  assert.ok(out.includes("sub_filter 'Zq7k2m9x' $request_id;"));
+  assert.ok(!out.includes('CSP_NONCE'));
+  assert.throws(() => F.nginxConfig(STATES.standard, 'production', 'x"; evil'), /placeholder/);
+});
+
+test('I2: HSTS has no includeSubDomains by default', () => {
+  assert.ok(F.laravelMiddleware(STATES.strict).includes("'max-age=31536000'"));
+  assert.ok(!F.laravelMiddleware(STATES.strict).includes("'max-age=31536000; includeSubDomains'"));
+});
+
+test('I3: the Pest size budget follows the size meter', () => {
+  assert.ok(F.pestTest(STATES.strict).includes('toBeLessThanOrEqual(8192)'));
+  assert.ok(F.pestTest(preset('strict', { hosting: ['nginxProxy'] })).includes('toBeLessThanOrEqual(4096)'));
+});
+
+test('I4: spatie output tells the user about embeds and dashboards it cannot express', () => {
+  const src = F.spatiePreset(KITCHEN);
+  assert.ok(src.includes('/widget/*'));
+  assert.ok(src.includes('telescope'));
+});
+
+test('C2: ReplaceCachedCspNonce really swaps the secret placeholder in headers and body, and nothing else', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'csp-nonce-'));
+  try {
+    writeFileSync(join(dir, 'mw.php'), F.nonceReplacementMiddleware());
+    writeFileSync(join(dir, 'run.php'), `<?php
+namespace Illuminate\\Http { class Request {} }
+namespace Symfony\\Component\\HttpFoundation {
+  class Bag { public array $h = []; function has($k) { return isset($this->h[$k]); } function get($k) { return $this->h[$k] ?? null; } function set($k, $v) { $this->h[$k] = $v; } }
+  class Response { public Bag $headers; public function __construct(public $content) { $this->headers = new Bag(); } function getContent() { return $this->content; } function setContent($c) { $this->content = $c; } }
+}
+namespace { function config($k) { return 'base64:test-app-key'; } }
+namespace {
+  require 'mw.php';
+  $p = App\\Http\\Middleware\\ReplaceCachedCspNonce::placeholder();
+  $make = function ($body) use ($p) { $r = new Symfony\\Component\\HttpFoundation\\Response($body); $r->headers->set('Content-Security-Policy', "script-src 'nonce-$p'"); return $r; };
+  $mw = new App\\Http\\Middleware\\ReplaceCachedCspNonce();
+  $a = $mw->handle(new Illuminate\\Http\\Request(), fn () => $make("<script nonce=\\"$p\\"></script><script nonce=\\"csp-nonce-placeholder\\"></script>"));
+  $b = $mw->handle(new Illuminate\\Http\\Request(), fn () => $make('no inline code'));
+  echo json_encode(['p' => $p, 'aBody' => $a->content, 'aHdr' => $a->headers->get('Content-Security-Policy'), 'bHdr' => $b->headers->get('Content-Security-Policy')]);
+}`);
+    const r = JSON.parse(execFileSync('php', [join(dir, 'run.php')], { cwd: dir, encoding: 'utf8' }));
+    assert.match(r.p, /^[0-9a-f]{64}$/);
+    const nonce = r.aHdr.match(/'nonce-([^']+)'/)[1];
+    assert.notEqual(nonce, r.p);
+    assert.ok(r.aBody.includes(`nonce="${nonce}"`), 'body rewritten with the header nonce');
+    assert.ok(r.aBody.includes('nonce="csp-nonce-placeholder"'), 'a guessed public string is not rewritten');
+    assert.ok(!r.bHdr.includes(r.p), 'header rewritten even when the body has no placeholder');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
   }
 });

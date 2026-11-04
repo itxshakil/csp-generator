@@ -12,6 +12,8 @@ const TABS = ['header', 'laravel', 'formats', 'checklist', 'summary'];
 let tab = 'header';
 let env = 'production';
 let lastGrade = '';
+// A secret token for the nginx sub_filter placeholder, fresh per visit. Letters and digits only.
+const NGINX_TOKEN = Array.from(crypto.getRandomValues(new Uint8Array(16)), b => 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'[b % 62]).join('');
 // Plain text behind every Copy and Download button, keyed by block id, so copies never pick up markup.
 const texts = new Map();
 
@@ -146,7 +148,7 @@ function renderLaravel(s) {
 function renderFormats(s) {
   return envSwitch() + [
     codeBlock('spatie', 'spatie/laravel-csp preset', F.spatiePreset(s), 'AppCspPreset.php'),
-    codeBlock('nginx', 'nginx', F.nginxConfig(s, env)),
+    codeBlock('nginx', 'nginx', F.nginxConfig(s, env, NGINX_TOKEN)),
     codeBlock('apache', 'Apache', F.apacheConfig(s, env)),
     codeBlock('meta', '<meta> tag (Blade)', F.metaTag(s, env)),
   ].join('');

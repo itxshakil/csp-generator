@@ -90,7 +90,7 @@ $faq = faq_items();
   <div class="config">
     <div class="config-head">
       <span class="config-title">Configure</span>
-      <div class="seg" role="radiogroup" aria-label="Preset">
+      <div class="seg" role="radiogroup" aria-label="Preset" title="Presets set integrations, stack and reporting. Hosting, local and embedding settings stay. Reset clears everything.">
         <button type="button" role="radio" aria-checked="false" data-preset="strict" title="Nothing third-party. Best for new apps.">Strict</button>
         <button type="button" role="radio" aria-checked="false" data-preset="standard" title="Vite, Google Fonts and GA4.">Standard</button>
         <button type="button" role="radio" aria-checked="false" data-preset="rollout" title="Standard in report-only mode, to watch before enforcing.">Rollout</button>

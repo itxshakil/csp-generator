@@ -70,10 +70,8 @@ test('headerName follows report-only', () => {
   assert.equal(headerName(preset('rollout')), 'Content-Security-Policy-Report-Only');
 });
 
-test('headerBytes counts the full header line in UTF-8 bytes', () => {
+test('headerBytes grows with the local sources', () => {
   const s = preset('strict');
-  const line = `Content-Security-Policy: ${policyString(buildDirectives(s))}`;
-  assert.equal(headerBytes(s), Buffer.byteLength(line, 'utf8'));
   assert.ok(headerBytes(s, 'local') > headerBytes(s), 'local adds Vite');
 });
 
@@ -88,4 +86,10 @@ test('every integration at once yields a large header without throwing', () => {
   const custom = { script: Array.from({ length: 50 }, (_, i) => `https://cdn${i}.example-long-host-name.com`), connect: Array.from({ length: 50 }, (_, i) => `https://api${i}.example-long-host-name.com`) };
   const all = preset('strict', { integrations: INTEGRATIONS.map(i => i.id), stack: STACK.map(s => s.id), hosting: HOSTING.map(h => h.id), custom });
   assert.notEqual(sizeLevel(headerBytes(all)), 'ok');
+});
+
+test('I3: headerBytes counts a real 24-character nonce, not the placeholder', () => {
+  const s = preset('strict');
+  const line = `Content-Security-Policy: ${policyString(buildDirectives(s)).replaceAll('{$nonce}', 'x'.repeat(24))}`;
+  assert.equal(headerBytes(s), Buffer.byteLength(line, 'utf8'));
 });

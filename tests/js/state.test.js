@@ -120,3 +120,19 @@ test('migrateV1 drops hostile old values', () => {
   assert.deepEqual(s.custom.script, []);
   assert.equal(s.viteOrigin, DEFAULT_STATE.viteOrigin);
 });
+
+import { applyPreset } from '../../assets/js/state.js';
+
+test('I1: a preset sets policy choices and keeps environment facts; reset clears everything', () => {
+  const before = sanitizeState({ v: 2, integrations: ['stripe'], hosting: ['cloudflare'], fullPageCache: true, embeds: [{ path: 'w', origins: ['https://p.com'] }], viteOrigin: 'https://app.test:5173', custom: { script: ['https://a.com'] } });
+  const after = applyPreset(before, 'strict');
+  assert.deepEqual(after.integrations, []);
+  assert.deepEqual(after.custom.script, []);
+  assert.deepEqual(after.hosting, ['cloudflare']);
+  assert.equal(after.fullPageCache, true);
+  assert.equal(after.embeds.length, 1);
+  assert.equal(after.viteOrigin, 'https://app.test:5173');
+  assert.deepEqual(before.integrations, ['stripe'], 'input not mutated');
+  const reset = applyPreset(before, 'strict', { reset: true });
+  assert.deepEqual(reset, { ...structuredClone(DEFAULT_STATE), ...PRESETS.strict });
+});
