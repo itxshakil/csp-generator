@@ -1,0 +1,136 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import * as F from '../../assets/js/formats.js';
+import { buildDirectives } from '../../assets/js/policy.js';
+import { DEFAULT_STATE, PRESETS, CUSTOM_KINDS, sanitizeState } from '../../assets/js/state.js';
+import { INTEGRATIONS, STACK, HOSTING } from '../../assets/js/integrations.js';
+
+const preset = (name, extra = {}) => sanitizeState({ ...structuredClone(DEFAULT_STATE), ...PRESETS[name], ...extra });
+const KITCHEN = preset('strict', {
+  integrations: INTEGRATIONS.map(i => i.id), stack: STACK.map(s => s.id), hosting: HOSTING.map(h => h.id),
+  custom: Object.fromEntries(CUSTOM_KINDS.map(k => [k, ['https://*.x-y.example.com:8443', `https://${k}.example.com`]])),
+  embeds: [{ path: 'widget/*', origins: ['https://partner.example.com'] }, { path: 'embed', origins: ['https://a.example.com', 'https://b.example.com'] }],
+  fullPageCache: true, viteOrigin: 'https://app.test:5173',
+});
+const STATES = { strict: preset('strict'), standard: preset('standard'), rollout: preset('rollout'), kitchen: KITCHEN };
+
+const PHP_FILES = ['laravelMiddleware', 'reportController', 'pestTest', 'nonceReplacementMiddleware', 'spatiePreset'];
+
+test('generated PHP files pass php -l', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'csp-php-'));
+  try {
+    for (const [label, state] of Object.entries(STATES)) {
+      for (const fn of PHP_FILES) {
+        const file = join(dir, `${label}-${fn}.php`);
+        writeFileSync(file, F[fn](state));
+        execFileSync('php', ['-l', file], { stdio: 'pipe' });
+      }
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+// Runs the generated middleware's policy() under a stub Laravel, so the PHP really produces the policy we show.
+function runMiddlewarePolicy(state, env) {
+  const dir = mkdtempSync(join(tmpdir(), 'csp-run-'));
+  try {
+    const src = F.laravelMiddleware(state);
+    const stub = `<?php
+namespace Illuminate\\Http { class Request {} }
+namespace Illuminate\\Support\\Facades { class View {} class Vite {} }
+namespace Symfony\\Component\\HttpFoundation { class Response {} }
+namespace App\\Http\\Middleware { class ReplaceCachedCspNonce { const PLACEHOLDER = 'P'; } }
+namespace { function app() { return new class { function environment($e) { return $e === '${env}'; } }; } }
+`;
+    writeFileSync(join(dir, 'stub.php'), stub);
+    writeFileSync(join(dir, 'mw.php'), src);
+    writeFileSync(join(dir, 'run.php'), `<?php require 'stub.php'; require 'mw.php';
+$m = new App\\Http\\Middleware\\SecureHeadersMiddleware();
+$r = new ReflectionMethod($m, 'policy');
+echo $r->invoke($m, 'NONCE', null);`);
+    return execFileSync('php', [join(dir, 'run.php')], { cwd: dir, encoding: 'utf8' });
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+test('the middleware builds exactly the policy the Header tab shows, in both environments', () => {
+  for (const state of Object.values(STATES)) {
+    for (const env of ['production', 'local']) {
+      const expected = F.headerValue(state, env).replaceAll('{$nonce}', 'NONCE');
+      assert.equal(runMiddlewarePolicy(state, env), expected, env);
+    }
+  }
+});
+
+test('the middleware puts a reason comment on every source line', () => {
+  const src = F.laravelMiddleware(KITCHEN);
+  const sourceLines = src.split('\n').filter(l => /^\s+(['"]).*\1,/.test(l) && !l.includes('=>'));
+  assert.ok(sourceLines.length > 50);
+  for (const l of sourceLines) assert.match(l, /, \/\/ \S/, l);
+});
+
+test('local-only sources appear only inside the local branch', () => {
+  const src = F.laravelMiddleware(KITCHEN);
+  for (const l of src.split('\n').filter(l => l.includes('app.test:5173'))) assert.match(l, /^ {20}'/, l);
+});
+
+test('embeds and skipped dashboards reach the middleware', () => {
+  const src = F.laravelMiddleware(KITCHEN);
+  assert.ok(src.includes("'widget/*' => ['https://partner.example.com'],"));
+  assert.ok(src.includes("'telescope*'"));
+  assert.ok(src.includes('ReplaceCachedCspNonce::PLACEHOLDER'));
+  assert.ok(!F.laravelMiddleware(STATES.strict).includes('ReplaceCachedCspNonce'));
+});
+
+test('meta tag omits frame-ancestors and reporting and uses the Blade nonce', () => {
+  const meta = F.metaTag(STATES.standard, 'production');
+  assert.ok(!/frame-ancestors|report-uri|report-to/.test(meta.split('\n').filter(l => l.startsWith('<meta')).join('')));
+  assert.ok(meta.includes("'nonce-{{ $cspNonce }}'"));
+});
+
+test('apache output contains no nonce; nginx output uses $request_id', () => {
+  assert.ok(!F.apacheConfig(STATES.standard, 'production').includes('nonce-'));
+  assert.ok(F.nginxConfig(STATES.standard, 'production').includes("'nonce-$request_id'"));
+});
+
+test('report-only state uses the Report-Only header name in server formats', () => {
+  for (const fn of ['laravelMiddleware', 'pestTest']) assert.ok(F[fn](STATES.rollout).includes('Content-Security-Policy-Report-Only'), fn);
+  for (const fn of ['nginxConfig', 'apacheConfig']) assert.ok(F[fn](STATES.rollout, 'production').includes('Content-Security-Policy-Report-Only'), fn);
+  assert.ok(F.metaTag(STATES.rollout, 'production').includes('cannot be report-only'));
+});
+
+test('spatie preset uses directive constants and nonces', () => {
+  const src = F.spatiePreset(STATES.standard);
+  assert.ok(src.includes('implements Preset'));
+  assert.ok(src.includes('->addNonce(Directive::SCRIPT)'));
+  assert.ok(src.includes("Directive::STYLE, [Keyword::SELF, 'https://fonts.googleapis.com']"));
+});
+
+test('blade snippets follow the stack', () => {
+  assert.ok(F.bladeSnippets(preset('strict', { stack: ['vite', 'livewire', 'inertia'] })).includes("@livewireScriptConfig(['nonce' => $cspNonce])"));
+  assert.ok(F.bladeSnippets(preset('strict', { stack: ['inertia'] })).includes('@routes(nonce: $cspNonce)'));
+  assert.ok(!F.bladeSnippets(preset('strict')).includes('@livewire'));
+});
+
+test('bootstrap registers the nonce replacement before the page cache only when needed', () => {
+  assert.ok(F.laravelBootstrap(KITCHEN).includes('ReplaceCachedCspNonce'));
+  assert.ok(!F.laravelBootstrap(STATES.strict).includes('ReplaceCachedCspNonce'));
+});
+
+test('report route matches the policy', () => {
+  assert.ok(F.reportRoute().includes("Route::post('/csp-violation-report'"));
+});
+
+test('no output contains an em dash', () => {
+  for (const state of Object.values(STATES)) {
+    const all = [...PHP_FILES.map(fn => F[fn](state)), F.laravelBootstrap(state), F.bladeSnippets(state), F.reportRoute(),
+      F.nginxConfig(state, 'production'), F.apacheConfig(state, 'local'), F.metaTag(state, 'production')].join('\n');
+    assert.ok(!all.includes('—'));
+  }
+});
