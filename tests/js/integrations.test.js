@@ -62,3 +62,24 @@ test('stack and hosting ids are the planned ones', () => {
   assert.deepEqual(HOSTING.map(h => h.id), ['cloudflare', 'hostinger', 'nginxProxy']);
   assert.ok(STACK.find(s => s.id === 'debugbar').localOnly);
 });
+
+// Facts checked against each vendor's CSP documentation on 2026-11-04.
+const has = (id, kind, source) => (INTEGRATION_BY_ID[id].sources[kind] ?? []).some(([s]) => s === source);
+
+test('catalog matches the vendor CSP docs checked on 2026-11-04', () => {
+  assert.ok(INTEGRATION_BY_ID['google-maps'].needs.unsafeEval, 'Maps JS API policy includes unsafe-eval');
+  assert.ok(INTEGRATION_BY_ID['google-maps'].needs.workerBlob);
+  assert.ok(INTEGRATION_BY_ID.crisp.needs.inlineStyleAttrs && INTEGRATION_BY_ID.crisp.needs.workerBlob);
+  assert.ok(INTEGRATION_BY_ID.intercom.needs.inlineStyleAttrs);
+  assert.ok(STACK.find(s => s.id === 'filament').needs.workerBlob, 'Filament file uploads use blob: workers');
+  assert.ok(has('sentry', 'connect', 'https://*.sentry.io'));
+  assert.ok(has('tawk', 'style', 'https://fonts.googleapis.com') && has('tawk', 'font', 'https://fonts.gstatic.com'));
+  assert.ok(has('tawk', 'form', 'https://*.tawk.to'));
+  assert.ok(has('paypal', 'style', 'https://*.paypal.com') && has('paypal', 'script', 'https://*.venmo.com'));
+  assert.ok(has('pusher', 'connect', 'wss://*.pusherapp.com'));
+  assert.ok(has('intercom', 'connect', 'wss://*.intercom-messenger.com'));
+  assert.ok(has('intercom', 'form', 'https://intercom.help'));
+  assert.ok(has('google-ads', 'connect', 'https://pagead2.googlesyndication.com'));
+  assert.ok(has('gtm', 'connect', 'https://www.google.com'));
+  assert.ok(has('hotjar', 'script', 'https://static.hotjar.com') && has('hotjar', 'script', 'https://script.hotjar.com'));
+});
