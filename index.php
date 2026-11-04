@@ -172,8 +172,9 @@ $n = htmlspecialchars($nonce, ENT_QUOTES);
           <div class="dir-lbl"><span class="dir-name">script-src custom</span><span class="dir-hint">Enter to add</span></div>
           <div class="tag-wrap">
             <div id="tags-script" class="tags-list"></div>
-            <input class="tag-inp" placeholder="https://cdn.example.com" data-dir="script" />
+            <input class="tag-inp" placeholder="https://cdn.example.com" data-dir="script" aria-label="Add a script-src host" aria-describedby="msg-script" />
           </div>
+          <p class="field-msg" id="msg-script" aria-live="polite"></p>
         </div>
       </div>
     </div>
@@ -203,8 +204,9 @@ $n = htmlspecialchars($nonce, ENT_QUOTES);
           <div class="dir-lbl"><span class="dir-name">style-src custom</span><span class="dir-hint">Enter to add</span></div>
           <div class="tag-wrap">
             <div id="tags-style" class="tags-list"></div>
-            <input class="tag-inp" placeholder="https://cdn.example.com" data-dir="style" />
+            <input class="tag-inp" placeholder="https://cdn.example.com" data-dir="style" aria-label="Add a style-src host" aria-describedby="msg-style" />
           </div>
+          <p class="field-msg" id="msg-style" aria-live="polite"></p>
         </div>
       </div>
     </div>
@@ -220,15 +222,17 @@ $n = htmlspecialchars($nonce, ENT_QUOTES);
           <div class="dir-lbl"><span class="dir-name">img-src</span><span class="dir-hint">Enter to add</span></div>
           <div class="tag-wrap">
             <div id="tags-img" class="tags-list"></div>
-            <input class="tag-inp" placeholder="https://your-cdn.com" data-dir="img" />
+            <input class="tag-inp" placeholder="https://your-cdn.com" data-dir="img" aria-label="Add a img-src host" aria-describedby="msg-img" />
           </div>
+          <p class="field-msg" id="msg-img" aria-live="polite"></p>
         </div>
         <div class="dir-block">
           <div class="dir-lbl"><span class="dir-name">frame-src</span><span class="dir-hint">Enter to add</span></div>
           <div class="tag-wrap">
             <div id="tags-frame" class="tags-list"></div>
-            <input class="tag-inp" placeholder="https://video.example.com" data-dir="frame" />
+            <input class="tag-inp" placeholder="https://video.example.com" data-dir="frame" aria-label="Add a frame-src host" aria-describedby="msg-frame" />
           </div>
+          <p class="field-msg" id="msg-frame" aria-live="polite"></p>
         </div>
       </div>
     </div>
@@ -245,8 +249,9 @@ $n = htmlspecialchars($nonce, ENT_QUOTES);
           <div class="dir-lbl"><span class="dir-name">connect-src custom</span><span class="dir-hint">Enter to add</span></div>
           <div class="tag-wrap">
             <div id="tags-connect" class="tags-list"></div>
-            <input class="tag-inp" placeholder="https://api.example.com" data-dir="connect" />
+            <input class="tag-inp" placeholder="https://api.example.com" data-dir="connect" aria-label="Add a connect-src host" aria-describedby="msg-connect" />
           </div>
+          <p class="field-msg" id="msg-connect" aria-live="polite"></p>
         </div>
       </div>
     </div>

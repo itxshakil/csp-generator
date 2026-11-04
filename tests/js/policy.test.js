@@ -97,3 +97,63 @@ test("allowing inline style attributes sets 'unsafe-inline' and lowers the score
   assert.deepEqual(dir(buildDirectives(on), 'style-src-attr'), ["'unsafe-inline'"]);
   assert.ok(score(on) < score(off));
 });
+
+import { normalizeSource, sanitizeState } from '../../assets/js/policy.js';
+
+test('normalizeSource reduces URLs to origins', () => {
+  assert.equal(normalizeSource('cdn.example.com/lib.js').value, 'https://cdn.example.com');
+  assert.equal(normalizeSource('https://cdn.example.com/').value, 'https://cdn.example.com');
+  assert.equal(normalizeSource('https://api.example.com:8443/v1?x=1').value, 'https://api.example.com:8443');
+  assert.equal(normalizeSource('wss://ws.example.com').value, 'wss://ws.example.com');
+  assert.equal(normalizeSource('https://*.example.com').value, 'https://*.example.com');
+  assert.equal(normalizeSource('*.example.com').value, 'https://*.example.com');
+});
+
+test('normalizeSource rejects keywords, wildcards and junk', () => {
+  for (const bad of ["'unsafe-inline'", '*', 'https://*', 'ftp://x.com', 'javascript:alert(1)', '<img src=x>', "a.com'", 'a b.com', '']) {
+    const r = normalizeSource(bad);
+    assert.equal(r.value, null, bad);
+    assert.ok(r.error, bad);
+  }
+});
+
+test('normalizeSource accepts insecure schemes with a warning', () => {
+  const r = normalizeSource('http://x.com');
+  assert.equal(r.value, 'http://x.com');
+  assert.ok(r.warning);
+  assert.ok(normalizeSource('ws://x.com').warning);
+  assert.equal(normalizeSource('https://x.com').warning, null);
+});
+
+test('sanitizeState keeps only valid stored values', () => {
+  const s = sanitizeState({
+    ga: 'yes', tawk: true, viteOrigin: 'javascript:alert(1)', evil: true,
+    tags: { script: ['<img src=x onerror=alert(1)>', "a.com'", 'ok.com'], nope: ['x.com'], img: 'not-an-array' },
+  });
+  assert.equal(s.ga, false);
+  assert.equal(s.tawk, true);
+  assert.equal(s.viteOrigin, DEFAULT_STATE.viteOrigin);
+  assert.equal('evil' in s, false);
+  assert.deepEqual(s.tags.script, ['https://ok.com']);
+  assert.deepEqual(s.tags.img, []);
+  assert.equal('nope' in s.tags, false);
+});
+
+test('sanitizeState falls back to defaults for garbage', () => {
+  assert.deepEqual(sanitizeState('garbage'), DEFAULT_STATE);
+  assert.deepEqual(sanitizeState(null), DEFAULT_STATE);
+  assert.deepEqual(sanitizeState([1, 2]), DEFAULT_STATE);
+});
+
+test('sanitizeState caps and de-duplicates tag lists', () => {
+  const many = Array.from({ length: 80 }, (_, i) => `h${i}.example.com`);
+  const s = sanitizeState({ tags: { connect: [...many, 'h0.example.com'] } });
+  assert.equal(s.tags.connect.length, 50);
+  assert.equal(new Set(s.tags.connect).size, 50);
+});
+
+test('sanitizeState does not share tag arrays with DEFAULT_STATE', () => {
+  const s = sanitizeState({});
+  s.tags.script.push('https://x.com');
+  assert.deepEqual(DEFAULT_STATE.tags.script, []);
+});

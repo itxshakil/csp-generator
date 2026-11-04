@@ -1,5 +1,5 @@
 // DOM wiring. The only module that touches the page.
-import { DEFAULT_STATE, PRESETS, TAG_DIRS, TOGGLE_KEYS, buildDirectives, policyString, score, grade, normalizeOrigin } from './policy.js';
+import { DEFAULT_STATE, PRESETS, TAG_DIRS, TOGGLE_KEYS, buildDirectives, policyString, score, grade, normalizeOrigin, normalizeSource, sanitizeState, MAX_TAGS } from './policy.js';
 import { track, clarityTag } from './analytics.js';
 import { escapeHtml, highlightPolicy } from './highlight.js';
 
@@ -93,13 +93,35 @@ function toggle(key) {
   track('toggle_feature', { feature: key, enabled: S[key] });
 }
 
+function showTagMessage(dir, text, isError) {
+  const msg = $('#msg-' + dir);
+  msg.textContent = text ?? '';
+  msg.classList.toggle('is-error', Boolean(isError));
+  $(`.tag-inp[data-dir="${dir}"]`).setAttribute('aria-invalid', String(Boolean(isError)));
+}
+
+// Returns true when the input was consumed (added, or already present).
 function addTag(dir, raw) {
-  const val = raw.trim().replace(/,$/, '');
-  if (!val || val.length <= 3 || S.tags[dir].includes(val)) return;
-  S.tags[dir].push(val);
+  if (!raw.trim()) return true;
+  const { value, error, warning } = normalizeSource(raw);
+  if (error) {
+    showTagMessage(dir, error, true);
+    return false;
+  }
+  if (S.tags[dir].includes(value)) {
+    showTagMessage(dir, `${value} is already in the list.`, false);
+    return true;
+  }
+  if (S.tags[dir].length >= MAX_TAGS) {
+    showTagMessage(dir, `You can add up to ${MAX_TAGS} hosts here.`, true);
+    return false;
+  }
+  S.tags[dir].push(value);
+  showTagMessage(dir, warning ?? (value !== raw.trim() ? `Added as ${value}.` : ''), false);
   renderTags();
   render();
   saveState();
+  return true;
 }
 
 function removeTag(dir, val) {
@@ -114,8 +136,7 @@ function onTagKey(e) {
   const dir = inp.dataset.dir;
   if (e.key === 'Enter' || e.key === ',') {
     e.preventDefault();
-    addTag(dir, inp.value);
-    inp.value = '';
+    if (addTag(dir, inp.value)) inp.value = '';
   } else if (e.key === 'Backspace' && !inp.value && S.tags[dir].length) {
     removeTag(dir, S.tags[dir][S.tags[dir].length - 1]);
   }
@@ -409,10 +430,7 @@ function restore() {
     console.warn('Ignoring unreadable saved settings', e);
     return false;
   }
-  Object.keys(S).forEach(k => {
-    if (k === 'tags') { if (saved.tags) Object.assign(S.tags, saved.tags); }
-    else if (saved[k] !== undefined) S[k] = saved[k];
-  });
+  Object.assign(S, sanitizeState(saved));
   currentPreset = '';
   markPreset('');
   syncToggles();

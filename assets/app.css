@@ -320,3 +320,5 @@ footer{border-top:1px solid var(--border);background:var(--white);padding:1.75re
 .text-inp[aria-invalid="true"]{border-color:var(--amber)}
 .field-msg{font-size:0.72rem;color:var(--amber);margin-top:0.3rem;line-height:1.4}
 .field-msg:empty{display:none}
+.field-msg.is-error{color:var(--red)}
+.tag-inp[aria-invalid="true"]{color:var(--red)}
