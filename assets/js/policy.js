@@ -2,20 +2,21 @@
 
 export const TAG_DIRS = ['script', 'style', 'img', 'frame', 'connect'];
 
-export const TOGGLE_KEYS = ['local', 'reportonly', 'reporting', 'jsdelivr', 'cdnjs', 'tawk', 'gfonts', 'ga', 'gtm', 'livewire'];
+export const TOGGLE_KEYS = ['local', 'reportonly', 'reporting', 'jsdelivr', 'cdnjs', 'tawk', 'gfonts', 'ga', 'gtm', 'livewire', 'inlineStyleAttrs'];
 
 export const DEFAULT_STATE = {
   local: false, reportonly: false, reporting: true,
   jsdelivr: true, cdnjs: true, tawk: false,
   gfonts: true, ga: false, gtm: false, livewire: false,
+  inlineStyleAttrs: false,
   viteOrigin: 'http://localhost:5173',
   tags: { script: [], style: [], img: [], frame: [], connect: [] },
 };
 
 export const PRESETS = {
-  strict:   { local: false, reportonly: false, reporting: true, jsdelivr: false, cdnjs: false, tawk: false, gfonts: false, ga: false, gtm: false, livewire: false },
-  standard: { local: false, reportonly: false, reporting: true, jsdelivr: true,  cdnjs: true,  tawk: false, gfonts: true,  ga: false, gtm: false, livewire: false },
-  local:    { local: true,  reportonly: true,  reporting: true, jsdelivr: true,  cdnjs: true,  tawk: false, gfonts: true,  ga: false, gtm: false, livewire: false },
+  strict:   { local: false, reportonly: false, reporting: true, jsdelivr: false, cdnjs: false, tawk: false, gfonts: false, ga: false, gtm: false, livewire: false, inlineStyleAttrs: false },
+  standard: { local: false, reportonly: false, reporting: true, jsdelivr: true,  cdnjs: true,  tawk: false, gfonts: true,  ga: false, gtm: false, livewire: false, inlineStyleAttrs: false },
+  local:    { local: true,  reportonly: true,  reporting: true, jsdelivr: true,  cdnjs: true,  tawk: false, gfonts: true,  ga: false, gtm: false, livewire: false, inlineStyleAttrs: false },
 };
 
 const SELF = "'self'";
@@ -87,7 +88,7 @@ export function buildDirectives(state) {
     { name: 'script-src', sources: script },
     { name: 'style-src', sources: style },
     { name: 'style-src-elem', sources: style },
-    { name: 'style-src-attr', sources: ["'none'"] },
+    { name: 'style-src-attr', sources: [state.inlineStyleAttrs ? "'unsafe-inline'" : "'none'"] },
     { name: 'font-src', sources: font },
     { name: 'img-src', sources: img },
     ...(media.length > 1 ? [{ name: 'media-src', sources: media }] : []),
@@ -113,6 +114,7 @@ export function score(state) {
   if (!state.gtm && !state.tawk && state.tags.script.length === 0) s += 15;
   if (!state.gtm) s += 10;
   if (!state.local) s += 10;
+  if (state.inlineStyleAttrs) s -= 10;
   return Math.min(s, 100);
 }
 

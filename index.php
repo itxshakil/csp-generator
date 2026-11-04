@@ -192,8 +192,12 @@ $n = htmlspecialchars($nonce, ENT_QUOTES);
           </div>
           <button type="button" class="toggle on" id="t-gfonts" data-toggle="gfonts"></button>
         </div>
-        <div class="cfg-note">
-          <code class="code-chip">style-src-attr</code> is always set to <code class="code-chip">'none'</code> — inline <code class="code-plain">style=""</code> attributes cannot carry a nonce.
+        <div class="trow">
+          <div class="trow-info">
+            <div class="trow-name">Allow inline style attributes <div class="tip"><span class="tip-icon">?</span><div class="tip-box">Sets style-src-attr to 'unsafe-inline'. Inline style="" attributes cannot carry a nonce, so 'none' is strictest. Turn this on only if a widget breaks without it.</div></div></div>
+            <div class="trow-desc">Needed by some widgets (PayPal, Tawk.to, Stripe) that set <code class="code-plain">style=""</code></div>
+          </div>
+          <button type="button" class="toggle" id="t-inlineStyleAttrs" data-toggle="inlineStyleAttrs"></button>
         </div>
         <div class="dir-block">
           <div class="dir-lbl"><span class="dir-name">style-src custom</span><span class="dir-hint">Enter to add</span></div>
@@ -376,7 +380,7 @@ $n = htmlspecialchars($nonce, ENT_QUOTES);
     <div class="feat-card">
       <div class="feat-icon">🔒</div>
       <div class="feat-title">Strict CSS directives</div>
-      <div class="feat-body">Correctly separates style-src, style-src-elem, and style-src-attr. style-src-attr is always set to 'none' — the only safe option.</div>
+      <div class="feat-body">Correctly separates style-src, style-src-elem, and style-src-attr. style-src-attr is 'none' by default, with a clear opt-in when a widget needs inline styles.</div>
     </div>
   </div>
 </section>

@@ -86,3 +86,14 @@ test('a host shared by two services appears once', () => {
 test('media-src only appears when a service needs it', () => {
   assert.equal(dir(buildDirectives(withPreset('standard')), 'media-src').length, 0);
 });
+
+test("style-src-attr defaults to 'none'", () => {
+  assert.deepEqual(dir(buildDirectives(withPreset('strict')), 'style-src-attr'), ["'none'"]);
+});
+
+test("allowing inline style attributes sets 'unsafe-inline' and lowers the score", () => {
+  const off = withPreset('strict');
+  const on = withPreset('strict', { inlineStyleAttrs: true });
+  assert.deepEqual(dir(buildDirectives(on), 'style-src-attr'), ["'unsafe-inline'"]);
+  assert.ok(score(on) < score(off));
+});
