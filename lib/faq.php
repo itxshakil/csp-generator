@@ -45,6 +45,14 @@ function faq_items(): array
             'q' => 'How do I handle CSP with Livewire?',
             'a_html' => 'For Livewire v2: <code>@livewireScripts([\'nonce\' => $cspNonce])</code>. For Livewire v3: <code>@livewireScriptConfig([\'nonce\' => $cspNonce])</code>. Livewire 3 also bundles the standard Alpine build, which needs <code>\'unsafe-eval\'</code>. Turn on Livewire 3 under Stack above and the policy, Blade snippets and checklist follow.',
         ],
+        [
+            'q' => 'How do I find everything my site loads?',
+            'a_html' => 'Open Tools and use the discovery bookmarklet: drag it to your bookmarks bar, open your site, and click it. It lists every origin the page loaded, grouped by type, and preselects the services it recognises. <strong>Scan my site</strong> does the same from the page HTML, but only sees what loads without interaction.',
+        ],
+        [
+            'q' => 'Is it safe to scan my site with this tool?',
+            'a_html' => 'Scanning fetches one page over HTTPS with a fixed user agent, follows at most three redirects, and stops after 5 seconds or 1 MB. Nothing about the request or the page is stored or logged, and private or internal addresses are refused. Your browser reads the HTML without running any of its scripts.',
+        ],
     ];
 }
 
