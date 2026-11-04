@@ -322,3 +322,5 @@ footer{border-top:1px solid var(--border);background:var(--white);padding:1.75re
 .field-msg:empty{display:none}
 .field-msg.is-error{color:var(--red)}
 .tag-inp[aria-invalid="true"]{color:var(--red)}
+.footer-privacy{font-size:0.74rem;color:var(--light);margin-top:0.5rem}
+.faq-a code{white-space:nowrap}
