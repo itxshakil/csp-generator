@@ -287,7 +287,7 @@ export const STACK = [
   { id: 'inertia', name: 'Inertia (Ziggy)', desc: 'Nonce on the @routes script' },
   { id: 'alpine', name: 'Alpine.js', desc: 'The standard build needs \'unsafe-eval\'', needs: { unsafeEval: 'The standard Alpine build evaluates expressions with new Function()' } },
   { id: 'alpineCsp', name: 'Alpine CSP build', desc: 'Uses @alpinejs/csp, so no \'unsafe-eval\'' },
-  { id: 'filament', name: 'Filament', desc: 'Admin panel built on Livewire and Alpine', needs: { unsafeEval: 'Filament runs on Livewire and the standard Alpine build', inlineStyleAttrs: 'Filament renders inline style="" attributes for colors and widths' } },
+  { id: 'filament', name: 'Filament', desc: 'Admin panel built on Livewire and Alpine', needs: { unsafeEval: 'Filament runs on Livewire and the standard Alpine build', inlineStyleAttrs: 'Filament renders inline style="" attributes for colors and widths' }, sources: { img: [['blob:', 'File upload previews']] } },
   { id: 'debugbar', name: 'Laravel Debugbar', desc: 'Local only', localOnly: true },
   { id: 'telescope', name: 'Telescope', desc: 'Skips the CSP on /telescope' },
   { id: 'horizon', name: 'Horizon', desc: 'Skips the CSP on /horizon' },
@@ -295,7 +295,10 @@ export const STACK = [
 ];
 
 export const HOSTING = [
-  { id: 'cloudflare', name: 'Cloudflare', desc: 'Web Analytics beacon, Rocket Loader and email obfuscation warnings' },
+  {
+    id: 'cloudflare', name: 'Cloudflare', desc: 'Web Analytics beacon, Rocket Loader and email obfuscation warnings',
+    sources: { script: [['https://static.cloudflareinsights.com', 'Web Analytics beacon']], connect: [['https://cloudflareinsights.com', 'Web Analytics events']] },
+  },
   { id: 'hostinger', name: 'Hostinger', desc: 'Warns about the extra CSP header its CDN adds' },
   { id: 'nginxProxy', name: 'Behind an nginx proxy', desc: 'Warns when the header outgrows the default proxy buffer' },
 ];
