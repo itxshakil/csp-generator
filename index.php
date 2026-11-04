@@ -47,7 +47,7 @@ $faq = faq_items();
 <!-- theme-color: dual light/dark -->
 <meta name="theme-color" content="#F8F7F4" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#18151F"  media="(prefers-color-scheme: dark)">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Laravel CSP Generator","url":"https://csp-generator.shakiltech.com","description":"Free tool to generate production-ready Content Security Policy for Laravel","applicationCategory":"DeveloperApplication","operatingSystem":"Any","featureList":["Nonce-based CSP","27 third-party integrations","Production and local policies from one config","Explained policy score","Header size meter","Laravel middleware, spatie preset, nginx, Apache and meta tag output","Violation reporting"],"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"creator":{"@type":"Person","name":"Shakil","url":"https://blog.shakiltech.com"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Laravel CSP Generator","url":"https://csp-generator.shakiltech.com","description":"Free tool to generate production-ready Content Security Policy for Laravel","applicationCategory":"DeveloperApplication","operatingSystem":"Any","featureList":["Nonce-based CSP","27 third-party integrations","Production and local policies from one config","Explained policy score","Header size meter","Laravel middleware, spatie preset, nginx, Apache and meta tag output","Violation reporting","Import an existing header","Violation explainer","Blade inline code scanner","Live header check"],"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"creator":{"@type":"Person","name":"Shakil","url":"https://blog.shakiltech.com"}}</script>
 <script type="application/ld+json"><?= faq_jsonld($faq) ?></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -279,6 +279,21 @@ $faq = faq_items();
       <div class="feat-icon">📋</div>
       <div class="feat-title">A checklist that follows your stack</div>
       <div class="feat-body">Livewire, Inertia, Filament, Cloudflare and full-page caching each add the steps they need. Tick them off as you go, and export a summary for your auditor.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">🔍</div>
+      <div class="feat-title">Import and explain</div>
+      <div class="feat-body">Paste your current header to start from it, or paste a console error or violation report to learn why it was blocked and fix it in one click.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">🧹</div>
+      <div class="feat-title">Find inline code</div>
+      <div class="feat-body">Scan Blade templates for inline scripts and styles without a nonce, onclick handlers, style attributes and javascript: links, with line numbers. Nothing leaves your browser.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">📡</div>
+      <div class="feat-title">Check what is live</div>
+      <div class="feat-body">Scan a page to see what it loads, or grade its deployed headers: duplicate CSP headers, a leaked X-Powered-By, missing HSTS, and how the live policy differs from yours.</div>
     </div>
   </div>
 </section>

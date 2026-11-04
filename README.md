@@ -50,6 +50,16 @@ This tool handles all of it so you don't debug it from scratch.
 | **Checklist** | Items driven by your config, ticked off as you go and remembered |
 | **Summary** | A Markdown summary for a pentest or audit, with your rollout dates |
 
+**Tools**, from the Tools menu:
+
+- **Import a policy:** paste your current header and start from it.
+  Services it recognises are turned on, and anything the generator does not model is listed.
+- **Explain a violation:** paste a console error from Chrome, Firefox or Safari, or a report body, and get a plain-English reason and a one-click fix.
+- **Find inline code:** scan Blade templates for scripts and styles without a nonce, `onclick` handlers, `style=""` and `javascript:` links.
+- **Discovery bookmarklet:** run it on your own site to list every origin the page loads.
+- **Share this config:** a link that carries the config in its hash.
+- **Scan my site** and **Check deployed headers:** fetch one page through a locked-down endpoint to propose sources or grade the live headers.
+
 **Three presets to start from:** Strict (nothing third-party), Standard (Vite, Google Fonts and GA4), and Rollout (Standard in report-only mode).
 
 ---
@@ -63,7 +73,7 @@ This tool handles all of it so you don't debug it from scratch.
 - **Header size meter:** amber above 4 KB (the default nginx proxy buffer), red above 8 KB.
 - **Wildcard collapsing:** a wildcard like `https://*.google.com` absorbs the specific hosts it covers.
 - **Violation reporting:** `report-uri` and `report-to` with a `Reporting-Endpoints` header, plus a controller that drops browser extension noise.
-- **Runs in your browser:** nothing you configure is sent anywhere, and there is no signup.
+- **Runs in your browser:** nothing you configure is sent anywhere, except a URL you ask us to scan, and there is no signup.
   The site uses Google Analytics and Microsoft Clarity for anonymous usage stats.
 
 ---
@@ -130,6 +140,7 @@ The generator sets `style-src-attr 'none'` unless you, or a service you picked, 
 There is no build step.
 `index.php` holds the markup, `assets/app.css` the styles, and `assets/js/` native ES modules.
 The integration catalog lives in `assets/js/integrations.js`.
+`scan.php` fetches pages for the scan tools through `lib/fetch-guard.php`, which refuses private and reserved addresses, re-checks every redirect, and pins the connection to the checked IP.
 Run the linters and tests before every commit:
 
 ```bash
