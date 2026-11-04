@@ -144,7 +144,7 @@ h1 em{font-style:normal;color:var(--red)}
 .cbtn{font-size:0.7rem;font-family:var(--mono);color:var(--light);background:var(--white);border:1px solid var(--border);border-radius:5px;padding:0.18rem 0.55rem;cursor:pointer;transition:all 0.15s}
 .cbtn:hover{color:var(--dark);border-color:var(--border2)}
 .cbtn.ok{color:var(--green);border-color:#BBF7D0;background:var(--green-bg)}
-pre{padding:0.9rem 1rem;font-family:var(--mono);font-size:0.76rem;line-height:1.75;overflow-x:auto;white-space:pre-wrap;word-break:break-all;color:var(--dark)}
+pre{padding:0.9rem 1rem;font-family:var(--mono);font-size:0.76rem;line-height:1.75;overflow-x:auto;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--dark)}
 .sk{color:#1D4ED8}.sv{color:#059669}.sn{color:#D97706}.sb{color:var(--red)}.su{color:#7C3AED}.sc{color:var(--light)}
 
 /* Checklist */
