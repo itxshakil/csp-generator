@@ -157,3 +157,23 @@ test('sanitizeState does not share tag arrays with DEFAULT_STATE', () => {
   s.tags.script.push('https://x.com');
   assert.deepEqual(DEFAULT_STATE.tags.script, []);
 });
+
+// Chromium's URL parser percent-encodes "*" in hostnames (Node and WebKit do not).
+function withChromiumUrl(fn) {
+  const NativeURL = globalThis.URL;
+  globalThis.URL = class extends NativeURL {
+    get hostname() { return super.hostname.replace(/\*/g, '%2A'); }
+  };
+  try { return fn(); } finally { globalThis.URL = NativeURL; }
+}
+
+test('wildcard sources survive a Chromium-style URL parser', () => {
+  withChromiumUrl(() => {
+    assert.equal(normalizeSource('*.stripe.com').value, 'https://*.stripe.com');
+    assert.equal(normalizeSource('https://*.example.com/path').value, 'https://*.example.com');
+    assert.equal(normalizeSource('wss://*.tawk.to').value, 'wss://*.tawk.to');
+    assert.deepEqual(sanitizeState({ tags: { script: ['https://*.stripe.com'] } }).tags.script, ['https://*.stripe.com']);
+    assert.ok(normalizeSource('https://*').error);
+    assert.ok(normalizeSource('https://a.*.com').error);
+  });
+});
