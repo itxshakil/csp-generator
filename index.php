@@ -84,211 +84,96 @@ $faq = faq_items();
   </div>
 </section>
 
-<div class="presets">
-  <button type="button" class="preset active" id="preset-strict" data-preset="strict">
-    <div class="preset-dot"></div>
-    <div class="preset-icon">🔒</div>
-    <div class="preset-name">Strict</div>
-    <div class="preset-desc">Minimal CDN allowlist. Best for new apps.</div>
-  </button>
-  <button type="button" class="preset" id="preset-standard" data-preset="standard">
-    <div class="preset-dot"></div>
-    <div class="preset-icon">⚖️</div>
-    <div class="preset-name">Standard</div>
-    <div class="preset-desc">Common CDNs, Google Fonts, GA4 ready.</div>
-  </button>
-  <button type="button" class="preset" id="preset-local" data-preset="local">
-    <div class="preset-dot"></div>
-    <div class="preset-icon">💻</div>
-    <div class="preset-name">Local Dev</div>
-    <div class="preset-desc">Vite HMR enabled, report-only on.</div>
-  </button>
-</div>
-
 <div class="tool">
 
   <!-- CONFIG -->
   <div class="config">
     <div class="config-head">
       <span class="config-title">Configure</span>
+      <div class="seg" role="radiogroup" aria-label="Preset">
+        <button type="button" role="radio" aria-checked="false" data-preset="strict" title="Nothing third-party. Best for new apps.">Strict</button>
+        <button type="button" role="radio" aria-checked="false" data-preset="standard" title="Vite, Google Fonts and GA4.">Standard</button>
+        <button type="button" role="radio" aria-checked="false" data-preset="rollout" title="Standard in report-only mode, to watch before enforcing.">Rollout</button>
+      </div>
       <button type="button" class="config-reset" data-action="reset">↺ Reset</button>
     </div>
 
-    <!-- Environment -->
-    <div class="cfg-section open" id="sec-env">
-      <div class="cfg-section-head" data-section="env">
-        <span class="cfg-section-label"><span class="cfg-icon">🌍</span> Environment</span>
-        <span class="cfg-chevron">▾</span>
+    <section class="cfg-section open" id="sec-integrations">
+      <button type="button" class="cfg-section-head" data-section="integrations" aria-expanded="true" aria-controls="body-integrations">
+        <span class="cfg-section-label"><span class="cfg-icon">🔌</span> Integrations <span class="cfg-count is-hidden" id="count-integrations"></span></span>
+        <span class="cfg-chevron" aria-hidden="true">▾</span>
+      </button>
+      <div class="cfg-body" id="body-integrations">
+        <input class="text-inp search-inp" id="int-search" type="search" placeholder="Search integrations" aria-label="Search integrations" autocomplete="off" spellcheck="false">
+        <div class="chips" id="int-chips" aria-label="Selected integrations"></div>
+        <div id="int-list"></div>
+        <p class="cfg-note" id="int-empty" hidden>No integration matches. Add its hosts under Advanced.</p>
       </div>
-      <div class="cfg-body">
-        <div class="trow">
-          <div class="trow-info">
-            <div class="trow-name">Local development <div class="tip"><span class="tip-icon">?</span><div class="tip-box">Adds the Vite dev server to script-src and style-src, its HMR WebSocket to connect-src, and removes upgrade-insecure-requests. Never ship this to production.</div></div></div>
-            <div class="trow-desc">Allows the Vite dev server and its HMR WebSocket</div>
-          </div>
-          <button type="button" class="toggle" id="t-local" data-toggle="local"></button>
-        </div>
-        <div class="dir-block vite-block is-hidden" id="vite-block">
+    </section>
+    <section class="cfg-section open" id="sec-stack">
+      <button type="button" class="cfg-section-head" data-section="stack" aria-expanded="true" aria-controls="body-stack">
+        <span class="cfg-section-label"><span class="cfg-icon">🧱</span> Stack</span>
+        <span class="cfg-chevron" aria-hidden="true">▾</span>
+      </button>
+      <div class="cfg-body" id="body-stack">
+        <div id="stack-list"></div>
+      </div>
+    </section>
+    <section class="cfg-section" id="sec-hosting">
+      <button type="button" class="cfg-section-head" data-section="hosting" aria-expanded="false" aria-controls="body-hosting">
+        <span class="cfg-section-label"><span class="cfg-icon">☁️</span> Hosting</span>
+        <span class="cfg-chevron" aria-hidden="true">▾</span>
+      </button>
+      <div class="cfg-body" id="body-hosting">
+        <div id="hosting-list"></div>
+      </div>
+    </section>
+    <section class="cfg-section" id="sec-local">
+      <button type="button" class="cfg-section-head" data-section="local" aria-expanded="false" aria-controls="body-local">
+        <span class="cfg-section-label"><span class="cfg-icon">💻</span> Local development</span>
+        <span class="cfg-chevron" aria-hidden="true">▾</span>
+      </button>
+      <div class="cfg-body" id="body-local">
+        <p class="cfg-note cfg-note--top">Used only for the Local output. Production never includes these.</p>
+        <div class="dir-block vite-block" id="vite-block">
           <div class="dir-lbl"><label class="dir-name" for="vite-origin">Vite dev server</label><span class="dir-hint">Herd: https://app.test:5173</span></div>
           <input class="text-inp" id="vite-origin" data-clarity-mask="true" type="text" inputmode="url" autocomplete="off" spellcheck="false" placeholder="http://localhost:5173" aria-describedby="vite-msg">
           <p class="field-msg" id="vite-msg" aria-live="polite"></p>
         </div>
-        <div class="trow">
-          <div class="trow-info">
-            <div class="trow-name">Report-only mode <div class="tip"><span class="tip-icon">?</span><div class="tip-box">Uses Content-Security-Policy-Report-Only. Violations are reported but nothing is blocked. Run this for 1–2 weeks before enforcing.</div></div></div>
-            <div class="trow-desc">Reports violations without blocking</div>
-          </div>
-          <button type="button" class="toggle" id="t-reportonly" data-toggle="reportonly"></button>
-        </div>
-        <div class="trow">
-          <div class="trow-info">
-            <div class="trow-name">Violation reporting <div class="tip"><span class="tip-icon">?</span><div class="tip-box">Adds report-uri to the policy. Set up CspReportController to receive and classify reports.</div></div></div>
-            <div class="trow-desc">Sends blocked resource reports to your endpoint</div>
-          </div>
-          <button type="button" class="toggle on" id="t-reporting" data-toggle="reporting"></button>
-        </div>
+        <div id="local-list"></div>
       </div>
-    </div>
-
-    <!-- Scripts -->
-    <div class="cfg-section open" id="sec-scripts">
-      <div class="cfg-section-head" data-section="scripts">
-        <span class="cfg-section-label"><span class="cfg-icon">⚡</span> Scripts <span class="cfg-count" id="count-scripts"></span></span>
-        <span class="cfg-chevron">▾</span>
+    </section>
+    <section class="cfg-section" id="sec-reporting">
+      <button type="button" class="cfg-section-head" data-section="reporting" aria-expanded="false" aria-controls="body-reporting">
+        <span class="cfg-section-label"><span class="cfg-icon">🚨</span> Reporting</span>
+        <span class="cfg-chevron" aria-hidden="true">▾</span>
+      </button>
+      <div class="cfg-body" id="body-reporting">
+        <div id="reporting-list"></div>
       </div>
-      <div class="cfg-body">
-        <div class="trow">
-          <div class="trow-info"><div class="trow-name">cdn.jsdelivr.net</div></div>
-          <button type="button" class="toggle on" id="t-jsdelivr" data-toggle="jsdelivr"></button>
-        </div>
-        <div class="trow">
-          <div class="trow-info"><div class="trow-name">cdnjs.cloudflare.com</div></div>
-          <button type="button" class="toggle on" id="t-cdnjs" data-toggle="cdnjs"></button>
-        </div>
-        <div class="trow">
-          <div class="trow-info">
-            <div class="trow-name">Tawk.to live chat</div>
-            <div class="trow-desc">*.tawk.to in scripts, styles, fonts, images, media, frames and WebSockets</div>
-          </div>
-          <button type="button" class="toggle" id="t-tawk" data-toggle="tawk"></button>
-        </div>
+    </section>
+    <section class="cfg-section" id="sec-advanced">
+      <button type="button" class="cfg-section-head" data-section="advanced" aria-expanded="false" aria-controls="body-advanced">
+        <span class="cfg-section-label"><span class="cfg-icon">⚙️</span> Advanced</span>
+        <span class="cfg-chevron" aria-hidden="true">▾</span>
+      </button>
+      <div class="cfg-body" id="body-advanced">
+        <div id="custom-list"></div>
+        <div id="style-attrs-row"></div>
+        <p class="cfg-note" id="style-attrs-required" aria-live="polite"></p>
         <div class="dir-block">
-          <div class="dir-lbl"><span class="dir-name">script-src custom</span><span class="dir-hint">Enter to add</span></div>
-          <div class="tag-wrap" data-clarity-mask="true">
-            <div id="tags-script" class="tags-list"></div>
-            <input class="tag-inp" placeholder="https://cdn.example.com" data-dir="script" aria-label="Add a script-src host" aria-describedby="msg-script" />
+          <div class="dir-lbl"><span class="dir-name">Embedding exceptions</span><span class="dir-hint">frame-ancestors per path</span></div>
+          <p class="cfg-note">Pages on these paths may be framed by the sites you list. Everything else stays unframeable.</p>
+          <div class="embed-form">
+            <input class="text-inp" id="embed-path" type="text" placeholder="widget/*" aria-label="Path pattern" autocomplete="off" spellcheck="false" aria-describedby="embed-msg" data-clarity-mask="true">
+            <input class="text-inp" id="embed-origin" type="text" inputmode="url" placeholder="https://partner.com" aria-label="Sites allowed to frame it, separated by spaces" autocomplete="off" spellcheck="false" aria-describedby="embed-msg" data-clarity-mask="true">
+            <button type="button" class="cbtn" data-action="add-embed">Add</button>
           </div>
-          <p class="field-msg" id="msg-script" aria-live="polite"></p>
+          <p class="field-msg" id="embed-msg" aria-live="polite"></p>
+          <ul class="embeds-list" id="embeds-list" data-clarity-mask="true"></ul>
         </div>
       </div>
-    </div>
-
-    <!-- Styles -->
-    <div class="cfg-section" id="sec-styles">
-      <div class="cfg-section-head" data-section="styles">
-        <span class="cfg-section-label"><span class="cfg-icon">🎨</span> Styles</span>
-        <span class="cfg-chevron">▾</span>
-      </div>
-      <div class="cfg-body">
-        <div class="trow">
-          <div class="trow-info">
-            <div class="trow-name">Google Fonts <div class="tip"><span class="tip-icon">?</span><div class="tip-box">Adds fonts.googleapis.com to style-src-elem and fonts.gstatic.com to font-src.</div></div></div>
-            <div class="trow-desc">fonts.googleapis.com + fonts.gstatic.com</div>
-          </div>
-          <button type="button" class="toggle on" id="t-gfonts" data-toggle="gfonts"></button>
-        </div>
-        <div class="trow">
-          <div class="trow-info">
-            <div class="trow-name">Allow inline style attributes <div class="tip"><span class="tip-icon">?</span><div class="tip-box">Sets style-src-attr to 'unsafe-inline'. Inline style="" attributes cannot carry a nonce, so 'none' is strictest. Turn this on only if a widget breaks without it.</div></div></div>
-            <div class="trow-desc">Needed by some widgets (PayPal, Tawk.to, Stripe) that set <code class="code-plain">style=""</code></div>
-          </div>
-          <button type="button" class="toggle" id="t-inlineStyleAttrs" data-toggle="inlineStyleAttrs"></button>
-        </div>
-        <div class="dir-block">
-          <div class="dir-lbl"><span class="dir-name">style-src custom</span><span class="dir-hint">Enter to add</span></div>
-          <div class="tag-wrap" data-clarity-mask="true">
-            <div id="tags-style" class="tags-list"></div>
-            <input class="tag-inp" placeholder="https://cdn.example.com" data-dir="style" aria-label="Add a style-src host" aria-describedby="msg-style" />
-          </div>
-          <p class="field-msg" id="msg-style" aria-live="polite"></p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Media -->
-    <div class="cfg-section" id="sec-media">
-      <div class="cfg-section-head" data-section="media">
-        <span class="cfg-section-label"><span class="cfg-icon">🖼</span> Images & Frames</span>
-        <span class="cfg-chevron">▾</span>
-      </div>
-      <div class="cfg-body">
-        <div class="dir-block dir-block--first">
-          <div class="dir-lbl"><span class="dir-name">img-src</span><span class="dir-hint">Enter to add</span></div>
-          <div class="tag-wrap" data-clarity-mask="true">
-            <div id="tags-img" class="tags-list"></div>
-            <input class="tag-inp" placeholder="https://your-cdn.com" data-dir="img" aria-label="Add a img-src host" aria-describedby="msg-img" />
-          </div>
-          <p class="field-msg" id="msg-img" aria-live="polite"></p>
-        </div>
-        <div class="dir-block">
-          <div class="dir-lbl"><span class="dir-name">frame-src</span><span class="dir-hint">Enter to add</span></div>
-          <div class="tag-wrap" data-clarity-mask="true">
-            <div id="tags-frame" class="tags-list"></div>
-            <input class="tag-inp" placeholder="https://video.example.com" data-dir="frame" aria-label="Add a frame-src host" aria-describedby="msg-frame" />
-          </div>
-          <p class="field-msg" id="msg-frame" aria-live="polite"></p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Connect -->
-    <div class="cfg-section" id="sec-connect">
-      <div class="cfg-section-head" data-section="connect">
-        <span class="cfg-section-label"><span class="cfg-icon">🔗</span> Connect & APIs</span>
-        <span class="cfg-chevron">▾</span>
-      </div>
-      <div class="cfg-body">
-        <p class="cfg-note cfg-note--top">Controls <code class="code-plain">fetch()</code>, XHR, WebSockets and SSE. Vite HMR WebSocket is added automatically when local dev is on.</p>
-        <div class="dir-block">
-          <div class="dir-lbl"><span class="dir-name">connect-src custom</span><span class="dir-hint">Enter to add</span></div>
-          <div class="tag-wrap" data-clarity-mask="true">
-            <div id="tags-connect" class="tags-list"></div>
-            <input class="tag-inp" placeholder="https://api.example.com" data-dir="connect" aria-label="Add a connect-src host" aria-describedby="msg-connect" />
-          </div>
-          <p class="field-msg" id="msg-connect" aria-live="polite"></p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Integrations -->
-    <div class="cfg-section" id="sec-integrations">
-      <div class="cfg-section-head" data-section="integrations">
-        <span class="cfg-section-label"><span class="cfg-icon">🔌</span> Integrations</span>
-        <span class="cfg-chevron">▾</span>
-      </div>
-      <div class="cfg-body">
-        <div class="trow">
-          <div class="trow-info">
-            <div class="trow-name">Google Analytics / GA4</div>
-            <div class="trow-desc">gtag.js plus the GA4 collection endpoints</div>
-          </div>
-          <button type="button" class="toggle" id="t-ga" data-toggle="ga"></button>
-        </div>
-        <div class="trow">
-          <div class="trow-info">
-            <div class="trow-name">Google Tag Manager <div class="tip"><span class="tip-icon">?</span><div class="tip-box">GTM custom HTML tags require unsafe-inline which weakens your policy. Consider server-side GTM instead.</div></div></div>
-          </div>
-          <button type="button" class="toggle" id="t-gtm" data-toggle="gtm"></button>
-        </div>
-        <div class="trow">
-          <div class="trow-info">
-            <div class="trow-name">Livewire</div>
-            <div class="trow-desc">Adds nonce reminders to the checklist</div>
-          </div>
-          <button type="button" class="toggle" id="t-livewire" data-toggle="livewire"></button>
-        </div>
-      </div>
-    </div>
+    </section>
 
   </div><!-- /config -->
 
