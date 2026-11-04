@@ -3,3 +3,4 @@ data/rate.json
 data/csp-reports.log
 data/csp-rate.json
 data/scan-rate.json
+data/scan-secret

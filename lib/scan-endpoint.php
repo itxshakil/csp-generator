@@ -14,10 +14,12 @@ require_once __DIR__ . '/rate-limit.php';
 
 const SCAN_RATE_MAX = 20;
 const SCAN_RATE_WINDOW = 3600;
+// Bounds the whole site, so spoofed Origins and many addresses still cannot turn this into a proxy.
+const SCAN_RATE_GLOBAL = 300;
 const SCAN_MAX_REQUEST = 4096;
 
 /** @return array{status: int, body: array<string, mixed>} */
-function handle_scan(array $server, string $body, callable $resolver, callable $transport, string $rateFile, string $siteOrigin): array
+function handle_scan(array $server, string $body, ?callable $resolver, callable $transport, string $rateFile, string $siteOrigin): array
 {
     $reply = fn (int $status, array $data) => ['status' => $status, 'body' => $data];
     $error = fn (int $status, string $message) => $reply($status, ['ok' => false, 'error' => $message]);
@@ -42,28 +44,21 @@ function handle_scan(array $server, string $body, callable $resolver, callable $
     if (!is_array($data) || !is_string($data['url'] ?? null) || trim($data['url']) === '') {
         return $error(400, 'Send {"url": "https://..."}.');
     }
-    if (rate_limited($rateFile, (string) ($server['REMOTE_ADDR'] ?? ''), SCAN_RATE_MAX, SCAN_RATE_WINDOW)) {
+    $visitor = rate_key((string) ($server['REMOTE_ADDR'] ?? ''), scan_secret(dirname($rateFile) . '/scan-secret'));
+    if (rate_limited($rateFile, $visitor, SCAN_RATE_MAX, SCAN_RATE_WINDOW)) {
         return $error(429, 'You have run ' . SCAN_RATE_MAX . ' scans this hour. Try again later.');
+    }
+    if (rate_limited($rateFile, 'site-wide', SCAN_RATE_GLOBAL, SCAN_RATE_WINDOW)) {
+        return $error(429, 'The scanner is busy. Try again later.');
     }
 
     $url = trim($data['url']);
     if (!preg_match('#^[a-z][a-z0-9+.-]*://#i', $url)) {
         $url = 'https://' . $url;
     }
-    $refusal = scan_url_error($url);
-    if ($refusal !== null) {
-        return $error(422, $refusal);
-    }
-    $host = (string) parse_url($url, PHP_URL_HOST);
-    $resolved = resolve_public_ip($host, $resolver);
-    if ($resolved['error'] !== null) {
-        return $error(422, $resolved['error']);
-    }
-
     $result = guarded_fetch($url, $resolver, $transport);
     if (!$result['ok']) {
-        // A redirect to a refused address is the site's doing, so it is a 422 like a refused first URL.
-        return $error(str_starts_with($result['error'], 'The site redirected to') ? 422 : 502, $result['error']);
+        return $error($result['refused'] ? 422 : 502, $result['error']);
     }
     return $reply(200, $result);
 }

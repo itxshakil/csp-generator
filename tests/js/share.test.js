@@ -62,3 +62,20 @@ test('bookmarkletSource is a single-line javascript: URL under 2000 characters t
   assert.doesNotThrow(() => new Function(decodeURIComponent(src.slice('javascript:'.length))));
   assert.ok(decodeURIComponent(src).includes('"https://csp-generator.shakiltech.com/#discover="'));
 });
+
+import { describeShared } from '../../assets/js/share.js';
+
+test('I4: describeShared lists every change a shared config makes, custom hosts first', () => {
+  const lines = describeShared(preset('strict', {
+    integrations: ['stripe'], reportOnly: true, reporting: false, inlineStyleAttrs: true,
+    custom: { script: ['https://evil.example'], connect: ['https://api.example.com'] },
+    embeds: [{ path: 'w/*', origins: ['https://p.example.com'] }],
+  }));
+  const text = lines.join('\n');
+  assert.ok(lines[0].includes('https://evil.example') && lines[0].includes('script-src'), lines[0]);
+  for (const want of ['https://api.example.com', 'Stripe', 'report-only', 'Reporting off', 'inline style attributes', '/w/*']) assert.ok(text.includes(want), want);
+});
+
+test('I4: describeShared of a plain preset says so', () => {
+  assert.deepEqual(describeShared(preset('strict')), ['No services, custom hosts or special settings.']);
+});

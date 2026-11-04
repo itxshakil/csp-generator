@@ -3,7 +3,7 @@ import { INTEGRATION_BY_ID } from './integrations.js';
 import { CUSTOM_KINDS, sanitizeState } from './state.js';
 import { importPolicy, explainViolation } from './parse.js';
 import { scanBlade } from './blade-scan.js';
-import { encodeShare, decodeHash, bookmarkletSource } from './share.js';
+import { encodeShare, decodeHash, bookmarkletSource, describeShared } from './share.js';
 import { resourcesFromDocument, proposeConfig, gradeHeaders, inertHtml } from './discover.js';
 import { headerValue } from './formats.js';
 import { track } from './analytics.js';
@@ -267,8 +267,9 @@ export function initTools(store) {
     $('[data-action="load-shared"]').hidden = true;
     open('shared', toolsBtn);
   } else if (hash.type === 'config') {
-    const names = hash.state.integrations.map(integrationName);
-    message($('#shared-result'), `This replaces your current settings with a shared config${names.length ? ` using ${names.join(', ')}` : ''}.`);
+    $('#shared-result').replaceChildren(
+      el('p', { class: 'tool-msg' }, 'This replaces your current settings. Check what the link changes, because anyone can make one:'),
+      el('ul', { class: 'tool-list-plain shared-changes' }, ...describeShared(hash.state).map(line => el('li', {}, line))));
     $('[data-action="load-shared"]').addEventListener('click', () => {
       store.update(s => Object.assign(s, hash.state));
       track('load_shared');

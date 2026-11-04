@@ -51,7 +51,7 @@ function faq_items(): array
         ],
         [
             'q' => 'Is it safe to scan my site with this tool?',
-            'a_html' => 'Scanning fetches one page over HTTPS with a fixed user agent, follows at most three redirects, and stops after 5 seconds or 1 MB. Nothing about the request or the page is stored or logged, and private or internal addresses are refused. Your browser reads the HTML without running any of its scripts.',
+            'a_html' => 'Scanning fetches one page over http or https with a fixed user agent, follows at most three redirects, and stops after 5 seconds in total or 1 MB. Nothing about the request or the page is stored or logged, and private or internal addresses are refused. Your browser reads the HTML without running any of its scripts.',
         ],
     ];
 }

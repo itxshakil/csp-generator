@@ -10,7 +10,7 @@ function scan_request(array $server = [], ?string $body = null, ?callable $trans
 {
     $server += ['REQUEST_METHOD' => 'POST', 'HTTP_ORIGIN' => SCAN_ORIGIN, 'CONTENT_TYPE' => 'application/json', 'REMOTE_ADDR' => '203.0.113.9'];
     $body ??= json_encode(['url' => 'https://example.com/']);
-    $transport ??= fn (string $url, string $ip): array => ['status' => 200, 'headers' => [['x-powered-by', 'PHP/8.1']], 'body' => '<p>hi</p>', 'truncated' => false, 'error' => null];
+    $transport ??= fn (string $url, ?string $ip, int $timeoutMs = 5000): array => ['status' => 200, 'headers' => [['x-powered-by', 'PHP/8.1']], 'body' => '<p>hi</p>', 'truncated' => false, 'error' => null];
     $resolver = fn (string $host): array => ['example.com' => ['93.184.215.14'], 'localhost' => ['127.0.0.1']][$host] ?? [];
     $rateFile ??= sys_get_temp_dir() . '/csp-scan-test-' . bin2hex(random_bytes(4)) . '.json';
     try {
@@ -73,5 +73,28 @@ return [
             assert_true(str_contains($src, $needle), "scan.php must contain {$needle}");
         }
         assert_true(!preg_match('/error_log|file_put_contents|syslog/', $src), 'scan.php must not log');
+    },
+    'I2: a site-wide cap applies across visitors' => function () {
+        $file = sys_get_temp_dir() . '/csp-scan-keep-' . bin2hex(random_bytes(4)) . '.json';
+        try {
+            for ($i = 0; $i < SCAN_RATE_GLOBAL; $i++) {
+                assert_same(200, scan_request(['REMOTE_ADDR' => "198.51.100.{$i}"], null, null, $file)['status'], "visitor {$i}");
+            }
+            assert_same(429, scan_request(['REMOTE_ADDR' => '192.0.2.200'], null, null, $file)['status']);
+        } finally {
+            unlink($file);
+        }
+    },
+    'I1: the first hop is resolved once, not twice' => function () {
+        $lookups = 0;
+        $resolver = function (string $host) use (&$lookups): array {
+            $lookups++;
+            return ['93.184.215.14'];
+        };
+        $transport = fn (string $url, ?string $ip, int $timeoutMs = 5000): array => ['status' => 200, 'headers' => [], 'body' => '', 'truncated' => false, 'error' => null];
+        $file = sys_get_temp_dir() . '/csp-scan-' . bin2hex(random_bytes(4)) . '.json';
+        handle_scan(['REQUEST_METHOD' => 'POST', 'HTTP_ORIGIN' => SCAN_ORIGIN, 'CONTENT_TYPE' => 'application/json', 'REMOTE_ADDR' => '1.1.1.1'], '{"url":"https://example.com"}', $resolver, $transport, $file, SCAN_ORIGIN);
+        unlink($file);
+        assert_same(1, $lookups);
     },
 ];

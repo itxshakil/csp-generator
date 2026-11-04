@@ -8,7 +8,8 @@ import { buildDirectives } from './policy.js';
 const HEADER_PREFIX = /^\s*content-security-policy(-report-only)?\s*:\s*/i;
 const META = /<meta\b[^>]*\bcontent\s*=\s*(["'])([\s\S]*?)\1/i;
 
-export function parsePolicy(text) {
+// The policy text from a bare value, a header line or a <meta> tag, plus whether it is report-only.
+function extractValue(text) {
   let value = String(text ?? '').trim();
   let reportOnly = false;
   const meta = META.exec(value);
@@ -18,6 +19,14 @@ export function parsePolicy(text) {
     reportOnly = Boolean(prefix[1]);
     value = value.slice(prefix[0].length);
   }
+  return { value, reportOnly };
+}
+
+// A comma separates two policies sent in one header; only the first is read.
+export function parsePolicy(text) {
+  const extracted = extractValue(text);
+  const value = extracted.value.split(',')[0];
+  const reportOnly = extracted.reportOnly;
   const directives = [];
   for (const part of value.split(';')) {
     const [name, ...sources] = part.trim().split(/\s+/).filter(Boolean);
@@ -49,12 +58,19 @@ const MANAGED = {
   'manifest-src': ["'self'"], 'upgrade-insecure-requests': [], 'style-src-attr': ["'none'", "'unsafe-inline'"],
 };
 const isNonce = s => /^'nonce-[^']*'$/i.test(s);
+const SCHEMELESS_HOST = /^(\*\.)?[a-z0-9-]+(\.[a-z0-9-]+)+(:\d+)?(\/\S*)?$/i;
+
+// CSP allows hosts without a scheme ("cdn.example.com"); they mean the page's scheme, which is https in production.
+function canonical(source) {
+  if (!SCHEMELESS_HOST.test(source)) return source;
+  return normalizeSource(`https://${source}`).value ?? source;
+}
 
 // Sources a policy allows for a kind, following the default-src fallback.
 function sourcesFor(directives, kind) {
   const found = KIND_DIRECTIVES[kind].map(n => directives.find(d => d.name === n)).filter(Boolean);
-  if (found.length) return found.flatMap(d => d.sources);
-  if (FALLS_BACK_TO_DEFAULT.has(kind)) return directives.find(d => d.name === 'default-src')?.sources ?? [];
+  if (found.length) return found.flatMap(d => d.sources).map(canonical);
+  if (FALLS_BACK_TO_DEFAULT.has(kind)) return (directives.find(d => d.name === 'default-src')?.sources ?? []).map(canonical);
   return [];
 }
 
@@ -79,6 +95,7 @@ export function matchIntegrations(directives) {
 
 export function importPolicy(text) {
   const { reportOnly, directives } = parsePolicy(text);
+  const several = extractValue(text).value.includes(',');
   const matched = matchIntegrations(directives);
   const explained = new Set(INTEGRATIONS.filter(i => matched.includes(i.id)).flatMap(i => integrationSources(i).map(([kind, s]) => `${kind} ${s}`)));
   const custom = Object.fromEntries(CUSTOM_KINDS.map(k => [k, []]));
@@ -98,7 +115,8 @@ export function importPolicy(text) {
     const kind = DIRECTIVE_KIND[d.name];
     if (!kind) { unknown.push({ directive: d.name, sources: d.sources }); continue; }
     const leftover = [];
-    for (const s of d.sources) {
+    for (const raw of d.sources) {
+      const s = canonical(raw);
       if (BASE[kind].includes(s) || isNonce(s) || explained.has(`${kind} ${s}`)) continue;
       if (kind === 'script' && s === "'unsafe-eval'") {
         notes.push("'unsafe-eval' found. Turn on the stack option that needs it (Livewire 3, Alpine, Filament) or Google Maps, or remove it.");
@@ -109,12 +127,13 @@ export function importPolicy(text) {
       if (value === s && CUSTOM_KINDS.includes(kind)) {
         if (!custom[kind].includes(value)) custom[kind].push(value);
       } else {
-        leftover.push(s);
+        leftover.push(raw);
       }
     }
     if (leftover.length) unknown.push({ directive: d.name, sources: leftover });
   }
 
+  if (several) notes.push('This text holds more than one policy (separated by a comma). Only the first was read; browsers enforce every one.');
   const state = sanitizeState({
     ...structuredClone(DEFAULT_STATE),
     integrations: matched, reportOnly, reporting, inlineStyleAttrs, custom,

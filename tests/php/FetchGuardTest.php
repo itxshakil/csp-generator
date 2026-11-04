@@ -15,7 +15,7 @@ function fake_resolver(array $map): callable
 /** A transport that answers from a script of responses keyed by URL, and records every call. */
 function fake_transport(array $responses, array &$calls): callable
 {
-    return function (string $url, string $ip) use ($responses, &$calls): array {
+    return function (string $url, ?string $ip, int $timeoutMs = 5000) use ($responses, &$calls): array {
         $calls[] = [$url, $ip];
         return $responses[$url] ?? ['status' => 200, 'headers' => [['content-type', 'text/html']], 'body' => '<p>ok</p>', 'truncated' => false, 'error' => null];
     };
@@ -165,6 +165,64 @@ return [
             assert_same(false, rate_limited($file, '5.6.7.8', 20, 3600, 1000), 'other visitors are not affected');
             assert_same(false, rate_limited($file, '1.2.3.4', 20, 3600, 4601), 'window reset');
             assert_true(!str_contains((string) file_get_contents($file), '1.2.3.4'), 'IPs are stored hashed');
+        } finally {
+            if (is_file($file)) {
+                unlink($file);
+            }
+        }
+    },
+    'I1: one 5 second budget covers every hop, and each hop gets only what is left' => function () {
+        $now = 0.0;
+        $clock = function () use (&$now): float {
+            return $now;
+        };
+        $budgets = [];
+        $transport = function (string $url, ?string $ip, int $timeoutMs) use (&$now, &$budgets): array {
+            $budgets[] = $timeoutMs;
+            $now += 2.0;
+            $next = ['https://example.com/0' => '/1', 'https://example.com/1' => '/2', 'https://example.com/2' => '/3'][$url] ?? null;
+            return $next ? redirect_to($next) : ['status' => 200, 'headers' => [], 'body' => '', 'truncated' => false, 'error' => null];
+        };
+        $r = guarded_fetch('https://example.com/0', fake_resolver(['example.com' => [PUBLIC_IP]]), $transport, $clock);
+        assert_same(false, $r['ok']);
+        assert_true(str_contains($r['error'], '5 seconds'), $r['error']);
+        assert_same([5000, 3000, 1000], $budgets);
+    },
+    'I1: without a resolver, host names go to the transport unresolved and IP literals are still checked' => function () {
+        $calls = [];
+        $r = guarded_fetch('https://example.com/', null, fake_transport([], $calls));
+        assert_same(true, $r['ok']);
+        assert_same([['https://example.com/', null]], $calls);
+        $calls = [];
+        $r = guarded_fetch('http://127.0.0.1/', null, fake_transport([], $calls));
+        assert_same(false, $r['ok']);
+        assert_same(true, $r['refused']);
+        assert_same([], $calls);
+    },
+    'I1: refusals are marked so the endpoint can answer 422' => function () {
+        $calls = [];
+        $r = guarded_fetch('https://example.com/', fake_resolver(['example.com' => [PUBLIC_IP], 'localhost' => ['127.0.0.1']]), fake_transport(['https://example.com/' => redirect_to('http://localhost/')], $calls));
+        assert_same(true, $r['refused']);
+        $down = fn (): array => ['status' => 0, 'headers' => [], 'body' => '', 'truncated' => false, 'error' => 'down'];
+        assert_same(false, guarded_fetch('https://example.com/', fake_resolver(['example.com' => [PUBLIC_IP]]), $down)['refused']);
+    },
+    'I1: the real transport refuses a public name that resolves to loopback before sending anything' => function () {
+        $r = curl_transport('http://localtest.me/', null, 3000);
+        assert_true($r['error'] !== null && str_contains($r['error'], 'private'), var_export($r['error'], true));
+    },
+    'I2: rate keys group an IPv6 /64, keep IPv4 exact, and never store a plain hash of the IP' => function () {
+        assert_same(rate_key('2001:db8:1:2:aaaa::1', 's'), rate_key('2001:db8:1:2:ffff::9', 's'));
+        assert_true(rate_key('2001:db8:1:3::1', 's') !== rate_key('2001:db8:1:2::1', 's'), 'other /64');
+        assert_true(rate_key('1.2.3.4', 's') !== rate_key('1.2.3.5', 's'), 'IPv4 exact');
+        assert_true(rate_key('1.2.3.4', 's') !== hash('sha256', '1.2.3.4'), 'keyed, not a plain hash');
+        assert_true(rate_key('1.2.3.4', 's') !== rate_key('1.2.3.4', 't'), 'secret matters');
+    },
+    'I2: the scan secret is created once and kept' => function () {
+        $file = sys_get_temp_dir() . '/csp-secret-' . bin2hex(random_bytes(4));
+        try {
+            $a = scan_secret($file);
+            assert_same(64, strlen($a));
+            assert_same($a, scan_secret($file));
         } finally {
             if (is_file($file)) {
                 unlink($file);
