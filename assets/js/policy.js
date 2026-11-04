@@ -53,16 +53,19 @@ export function normalizeSource(raw) {
   if (!input) return fail('Enter a host, for example cdn.example.com.');
   if (/[\s'"<>`;,\\]/.test(input)) return fail("Enter a host or URL. Keywords like 'unsafe-inline' are not allowed here.");
   const withScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(input) ? input : 'https://' + input;
+  // URL parsers disagree on "*" in hostnames (Chromium percent-encodes it), so the wildcard
+  // label is taken off before parsing and put back afterwards.
+  const wildcard = /^[a-z][a-z0-9+.-]*:\/\/\*\./i.test(withScheme);
   let url;
   try {
-    url = new URL(withScheme);
+    url = new URL(wildcard ? withScheme.replace('://*.', '://') : withScheme);
   } catch {
     return fail('That is not a valid host.');
   }
   if (!SOURCE_SCHEMES.includes(url.protocol)) return fail('Use https://, wss://, http:// or ws://.');
-  const host = url.hostname.startsWith('*.') ? url.hostname.slice(2) : url.hostname;
+  const host = url.hostname;
   if (!HOSTNAME.test(host) || (!host.includes('.') && host !== 'localhost')) return fail('That is not a valid host.');
-  const value = `${url.protocol}//${url.hostname}${url.port ? ':' + url.port : ''}`;
+  const value = `${url.protocol}//${wildcard ? '*.' : ''}${host}${url.port ? ':' + url.port : ''}`;
   const warning = url.protocol === 'http:' || url.protocol === 'ws:'
     ? 'Insecure source: browsers block it on HTTPS pages as mixed content.'
     : null;
