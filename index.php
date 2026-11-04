@@ -164,7 +164,7 @@ $n = htmlspecialchars($nonce, ENT_QUOTES);
         <div class="trow">
           <div class="trow-info">
             <div class="trow-name">Tawk.to live chat</div>
-            <div class="trow-desc">embed.tawk.to</div>
+            <div class="trow-desc">*.tawk.to in scripts, styles, fonts, images, media, frames and WebSockets</div>
           </div>
           <button type="button" class="toggle" id="t-tawk" data-toggle="tawk"></button>
         </div>
@@ -257,7 +257,7 @@ $n = htmlspecialchars($nonce, ENT_QUOTES);
         <div class="trow">
           <div class="trow-info">
             <div class="trow-name">Google Analytics / GA4</div>
-            <div class="trow-desc">Adds google-analytics.com to script-src + connect-src</div>
+            <div class="trow-desc">gtag.js plus the GA4 collection endpoints</div>
           </div>
           <button type="button" class="toggle" id="t-ga" data-toggle="ga"></button>
         </div>
