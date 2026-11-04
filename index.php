@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/lib/site-headers.php';
 require_once __DIR__ . '/lib/faq.php';
+require_once __DIR__ . '/lib/assets.php';
 
 $nonce = site_nonce();
 send_site_headers($nonce, request_origin());
@@ -51,9 +52,10 @@ $faq = faq_items();
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" nonce="<?= $n ?>" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" nonce="<?= $n ?>" href="/assets/app.css">
-<script type="module" nonce="<?= $n ?>" src="/assets/js/analytics.js"></script>
-<script type="module" nonce="<?= $n ?>" src="/assets/js/ui.js"></script>
+<link rel="stylesheet" nonce="<?= $n ?>" href="<?= asset_url('/assets/app.css') ?>">
+<script type="importmap" nonce="<?= $n ?>"><?= import_map_json() ?></script>
+<script type="module" nonce="<?= $n ?>" src="<?= asset_url('/assets/js/analytics.js') ?>"></script>
+<script type="module" nonce="<?= $n ?>" src="<?= asset_url('/assets/js/ui.js') ?>"></script>
 </head>
 <body>
 

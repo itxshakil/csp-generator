@@ -1,54 +1,70 @@
-const CACHE = 'csp-v1';
+const CACHE = 'csp-v2';
 const FONT_CACHE = 'csp-fonts-v1';
-const SHELL = ['/', '/manifest.json', '/favicon.svg', '/icon.php?s=192', '/icon.php?s=512'];
+const SHELL = ['/manifest.json', '/favicon.svg', '/icon.php?s=192', '/icon.php?s=512'];
+
+// Asset URLs carry ?v=<mtime>, so the page HTML lists exactly the files that belong together.
+const VERSIONED_ASSET = /\/assets\/[\w./-]+\?v=\d+/g;
+
+async function precache() {
+  const cache = await caches.open(CACHE);
+  await cache.addAll(SHELL);
+  const page = await fetch('/', { cache: 'no-store' });
+  if (!page.ok) throw new Error(`Precache of / failed with ${page.status}`);
+  const html = await page.clone().text();
+  await cache.put('/', page);
+  await cache.addAll([...new Set(html.match(VERSIONED_ASSET) ?? [])]);
+}
 
 self.addEventListener('install', e => {
-  e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())
-  );
+  e.waitUntil(precache().then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', e => {
   e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE && k !== FONT_CACHE).map(k => caches.delete(k)))
-    ).then(() => self.clients.claim())
+    caches.keys()
+      .then(keys => Promise.all(keys.filter(k => k !== CACHE && k !== FONT_CACHE).map(k => caches.delete(k))))
+      .then(() => self.clients.claim())
   );
 });
 
-self.addEventListener('fetch', e => {
-  const url = new URL(e.request.url);
+async function cacheFirst(request, cacheName) {
+  const cache = await caches.open(cacheName);
+  const cached = await cache.match(request);
+  if (cached) return cached;
+  const res = await fetch(request);
+  if (res.ok) await cache.put(request, res.clone());
+  return res;
+}
 
-  if (e.request.method !== 'GET') return;
+async function networkFirst(request, fallbackKey) {
+  const cache = await caches.open(CACHE);
+  try {
+    const res = await fetch(request);
+    if (res.ok) await cache.put(fallbackKey ?? request, res.clone());
+    return res;
+  } catch (err) {
+    const cached = await cache.match(fallbackKey ?? request);
+    if (cached) return cached;
+    throw err;
+  }
+}
+
+self.addEventListener('fetch', e => {
+  const { request } = e;
+  if (request.method !== 'GET') return;
+  const url = new URL(request.url);
 
   if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com') {
-    e.respondWith(
-      caches.open(FONT_CACHE).then(c =>
-        c.match(e.request).then(cached => {
-          if (cached) return cached;
-          return fetch(e.request).then(res => { c.put(e.request, res.clone()); return res; });
-        })
-      )
-    );
+    e.respondWith(cacheFirst(request, FONT_CACHE));
     return;
   }
+  if (url.origin !== location.origin) return;
 
-  if (url.origin === location.origin) {
-    if (url.pathname === '/' || url.pathname === '/index.php') {
-      e.respondWith(
-        fetch(e.request)
-          .then(res => { caches.open(CACHE).then(c => c.put(e.request, res.clone())); return res; })
-          .catch(() => caches.match('/'))
-      );
-    } else {
-      e.respondWith(
-        caches.match(e.request).then(cached =>
-          cached || fetch(e.request).then(res => {
-            caches.open(CACHE).then(c => c.put(e.request, res.clone()));
-            return res;
-          })
-        )
-      );
-    }
+  if (request.mode === 'navigate' || url.pathname === '/' || url.pathname === '/index.php') {
+    e.respondWith(networkFirst(request, '/'));
+  } else if (url.pathname.startsWith('/assets/') && url.searchParams.has('v')) {
+    e.respondWith(cacheFirst(request, CACHE));
+  } else {
+    e.respondWith(networkFirst(request));
   }
 });
