@@ -147,6 +147,7 @@ function resolve_public_ip(string $host, callable $resolver): array
     return ['ip' => $v4[0] ?? $ips[0], 'error' => null];
 }
 
+// PHP cannot put a timeout on this lookup; the per-visitor and site-wide rate limits bound how often it runs.
 function dns_resolver(string $host): array
 {
     $records = dns_get_record($host, DNS_A | DNS_AAAA);
@@ -182,25 +183,46 @@ function resolve_location(string $base, string $location): string
 }
 
 /**
- * @param callable(string): list<string> $resolver host to IPs
- * @param callable(string, string): array{status: int, headers: list<array{0: string, 1: string}>, body: string, truncated: bool, error: ?string} $transport
+ * Fetches a URL, following at most SCAN_MAX_REDIRECTS redirects, every hop validated again.
+ * One SCAN_TIMEOUT budget covers the whole fetch; each hop gets only the time that is left.
+ * Without a resolver, host names go to the transport unresolved and the transport checks the address it
+ * connects to before sending anything (curl_transport does). IP literals are always checked here.
+ *
+ * @param (callable(string): list<string>)|null $resolver host to IPs, for pinning (tests pass a fake)
+ * @param callable(string, ?string, int): array{status: int, headers: list<array{0: string, 1: string}>, body: string, truncated: bool, error: ?string, refused?: bool} $transport
+ * @param (callable(): float)|null $clock seconds, for tests
  */
-function guarded_fetch(string $url, callable $resolver, callable $transport): array
+function guarded_fetch(string $url, ?callable $resolver, callable $transport, ?callable $clock = null): array
 {
-    $fail = fn (string $error, array $redirects = []) => ['ok' => false, 'error' => $error, 'redirects' => $redirects];
+    $clock ??= fn (): float => microtime(true);
+    $start = $clock();
+    $fail = fn (string $error, array $redirects, bool $refused) => ['ok' => false, 'error' => $error, 'redirects' => $redirects, 'refused' => $refused];
+    $noLookup = function (): array {
+        throw new LogicException('IP literals are checked without a lookup.');
+    };
     $redirects = [];
     for ($hop = 0; $hop <= SCAN_MAX_REDIRECTS; $hop++) {
+        $prefix = $hop === 0 ? '' : "The site redirected to {$url}: ";
         $error = scan_url_error($url);
         if ($error !== null) {
-            return $fail($hop === 0 ? $error : "The site redirected to {$url}: {$error}", $redirects);
+            return $fail($prefix . $error, $redirects, true);
         }
-        $resolved = resolve_public_ip((string) parse_url($url, PHP_URL_HOST), $resolver);
-        if ($resolved['error'] !== null) {
-            return $fail($hop === 0 ? $resolved['error'] : "The site redirected to {$url}: {$resolved['error']}", $redirects);
+        $host = (string) parse_url($url, PHP_URL_HOST);
+        $ip = null;
+        if ($resolver !== null || filter_var(trim($host, '[]'), FILTER_VALIDATE_IP)) {
+            $resolved = resolve_public_ip($host, $resolver ?? $noLookup);
+            if ($resolved['error'] !== null) {
+                return $fail($prefix . $resolved['error'], $redirects, true);
+            }
+            $ip = $resolved['ip'];
         }
-        $response = $transport($url, $resolved['ip']);
+        $left = (int) floor((SCAN_TIMEOUT - ($clock() - $start)) * 1000);
+        if ($left <= 0) {
+            return $fail('The site did not finish within ' . SCAN_TIMEOUT . ' seconds.', $redirects, false);
+        }
+        $response = $transport($url, $ip, $left);
         if ($response['error'] !== null) {
-            return $fail($response['error'], $redirects);
+            return $fail($prefix . $response['error'], $redirects, (bool) ($response['refused'] ?? false));
         }
         $location = null;
         foreach ($response['headers'] as [$name, $value]) {
@@ -214,36 +236,56 @@ function guarded_fetch(string $url, callable $resolver, callable $transport): ar
             continue;
         }
         return [
-            'ok' => true, 'error' => null, 'status' => $response['status'], 'finalUrl' => $url, 'redirects' => $redirects,
+            'ok' => true, 'error' => null, 'refused' => false, 'status' => $response['status'], 'finalUrl' => $url, 'redirects' => $redirects,
             'headers' => $response['headers'], 'html' => $response['body'], 'truncated' => $response['truncated'],
         ];
     }
-    return $fail('Too many redirects (more than ' . SCAN_MAX_REDIRECTS . ').', $redirects);
+    return $fail('Too many redirects (more than ' . SCAN_MAX_REDIRECTS . ').', $redirects, false);
 }
 
-/** One GET, pinned to the IP that was checked, no redirects, no cookies, capped in time and size. */
-function curl_transport(string $url, string $ip): array
+/**
+ * One GET with no redirects and no cookies, capped in time and size. With $ip the connection is pinned to it,
+ * so curl never connects to anything that was not checked. The pre-request callback is a second line of
+ * defence: it refuses a non-public address, or one other than $ip, before a single request byte is sent.
+ */
+function curl_transport(string $url, ?string $ip, int $timeoutMs = SCAN_TIMEOUT * 1000): array
 {
+    if (!defined('CURLOPT_PREREQFUNCTION')) {
+        throw new RuntimeException('scan.php needs PHP 8.4+ with curl 7.80+ (CURLOPT_PREREQFUNCTION).');
+    }
     $parts = parse_url($url);
+    $host = $parts['host'];
     $port = $parts['port'] ?? (strtolower($parts['scheme']) === 'https' ? 443 : 80);
-    $pinned = str_contains($ip, ':') ? "[{$ip}]" : $ip;
     $headers = [];
     $body = '';
     $truncated = false;
+    $blocked = false;
+    $empty = fn (string $error, bool $refused = false) => ['status' => 0, 'headers' => [], 'body' => '', 'truncated' => false, 'error' => $error, 'refused' => $refused];
     $ch = curl_init();
     curl_setopt_array($ch, [
         CURLOPT_URL => $url,
-        CURLOPT_RESOLVE => ["{$parts['host']}:{$port}:{$pinned}"],
         CURLOPT_HTTPGET => true,
         CURLOPT_FOLLOWLOCATION => false,
         CURLOPT_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,
         CURLOPT_PROXY => '',
         CURLOPT_NOPROXY => '*',
-        CURLOPT_TIMEOUT => SCAN_TIMEOUT,
-        CURLOPT_CONNECTTIMEOUT => SCAN_TIMEOUT,
+        CURLOPT_TIMEOUT_MS => $timeoutMs,
+        CURLOPT_CONNECTTIMEOUT_MS => $timeoutMs,
+        CURLOPT_DNS_CACHE_TIMEOUT => 0,
         CURLOPT_USERAGENT => SCAN_USER_AGENT,
         CURLOPT_ENCODING => '',
+        CURLOPT_PREREQFUNCTION => function ($ch, string $primaryIp) use ($ip, &$blocked): int {
+            if (!is_public_ip($primaryIp) || ($ip !== null && inet_pton($primaryIp) !== inet_pton($ip))) {
+                $blocked = true;
+                return CURL_PREREQFUNC_ABORT;
+            }
+            return CURL_PREREQFUNC_OK;
+        },
         CURLOPT_HEADERFUNCTION => function ($ch, string $line) use (&$headers): int {
+            // A new status line (after 1xx responses) starts a fresh header list.
+            if (preg_match('#^HTTP/\S+\s+\d{3}#', $line)) {
+                $headers = [];
+            }
             $pos = strpos($line, ':');
             if ($pos !== false) {
                 $headers[] = [strtolower(trim(substr($line, 0, $pos))), trim(substr($line, $pos + 1))];
@@ -261,20 +303,25 @@ function curl_transport(string $url, string $ip): array
             return strlen($chunk);
         },
     ]);
+    if ($ip !== null) {
+        curl_setopt($ch, CURLOPT_RESOLVE, ["{$host}:{$port}:" . (str_contains($ip, ':') ? "[{$ip}]" : $ip)]);
+    }
     curl_exec($ch);
     $errno = curl_errno($ch);
     $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
-    $connected = (string) curl_getinfo($ch, CURLINFO_PRIMARY_IP);
     $message = curl_error($ch);
 
-    if ($connected !== '' && inet_pton($connected) !== inet_pton($ip)) {
-        return ['status' => 0, 'headers' => [], 'body' => '', 'truncated' => false, 'error' => 'The connection did not go to the checked address.'];
+    if ($blocked) {
+        return $empty("{$host} points to a private or reserved address, which cannot be scanned.", true);
     }
     if ($errno === CURLE_OPERATION_TIMEDOUT) {
-        return ['status' => 0, 'headers' => [], 'body' => '', 'truncated' => false, 'error' => 'The site did not answer within ' . SCAN_TIMEOUT . ' seconds.'];
+        return $empty('The site did not finish within ' . SCAN_TIMEOUT . ' seconds.');
+    }
+    if ($errno === CURLE_COULDNT_RESOLVE_HOST) {
+        return $empty("Could not find {$host}. Check the spelling.", true);
     }
     if ($errno !== 0 && !($errno === CURLE_WRITE_ERROR && $truncated)) {
-        return ['status' => 0, 'headers' => [], 'body' => '', 'truncated' => false, 'error' => "Could not fetch the page ({$message})."];
+        return $empty("Could not fetch the page ({$message}).");
     }
     return ['status' => $status, 'headers' => $headers, 'body' => $body, 'truncated' => $truncated, 'error' => null];
 }

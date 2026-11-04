@@ -1,6 +1,7 @@
 // Config and discovery data carried in the URL hash. The hash never reaches a server.
 import { DEFAULT_STATE, sanitizeState } from './state.js';
 import { normalizeSource } from './sources.js';
+import { INTEGRATION_BY_ID, STACK, HOSTING } from './integrations.js';
 
 export const MAX_HASH = 16384;
 const MAX_RESOURCES = 500;
@@ -79,4 +80,27 @@ setTimeout(()=>{const j=JSON.stringify({p:location.origin,r:[...seen.values()].s
 export function bookmarkletSource(appOrigin) {
   const code = BOOKMARKLET.replace(/\n/g, '').replace('APP+b', `${JSON.stringify(`${appOrigin}/#discover=`)}+b`);
   return 'javascript:' + encodeURIComponent(code);
+}
+
+const CUSTOM_LABELS = { script: 'script-src', style: 'style-src', img: 'img-src', font: 'font-src', frame: 'frame-src', connect: 'connect-src', media: 'media-src', form: 'form-action' };
+
+// Everything a shared config would change, in plain lines, script hosts first because they matter most.
+// Shown before loading, since anyone can write a link.
+export function describeShared(state) {
+  const lines = [];
+  const order = ['script', 'style', 'connect', 'frame', 'form', 'img', 'font', 'media'];
+  for (const kind of order) {
+    if (state.custom[kind].length) lines.push(`Adds to ${CUSTOM_LABELS[kind]}: ${state.custom[kind].join(' ')}`);
+  }
+  if (state.integrations.length) lines.push(`Services: ${state.integrations.map(id => INTEGRATION_BY_ID[id].name).join(', ')}`);
+  const stack = state.stack.filter(id => id !== 'vite');
+  if (stack.length) lines.push(`Stack: ${stack.map(id => STACK.find(s => s.id === id).name).join(', ')}`);
+  if (state.hosting.length) lines.push(`Hosting: ${state.hosting.map(id => HOSTING.find(h => h.id === id).name).join(', ')}`);
+  if (state.reportOnly) lines.push('Mode: report-only (nothing is blocked)');
+  if (!state.reporting) lines.push('Reporting off');
+  if (state.inlineStyleAttrs) lines.push('Allows inline style attributes');
+  if (state.fullPageCache) lines.push('Full-page cache on');
+  for (const e of state.embeds) lines.push(`Lets ${e.origins.join(' ')} frame /${e.path}`);
+  if (state.viteOrigin !== DEFAULT_STATE.viteOrigin) lines.push(`Vite dev server: ${state.viteOrigin}`);
+  return lines.length ? lines : ['No services, custom hosts or special settings.'];
 }

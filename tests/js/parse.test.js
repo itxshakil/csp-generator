@@ -73,3 +73,24 @@ test('reporting and report-only are read back', () => {
   assert.equal(importPolicy("default-src 'self'").state.reporting, false);
   assert.equal(importPolicy("default-src 'self'; report-uri /x").state.reporting, true);
 });
+
+test('I3: host sources without a scheme are read as https and matched', () => {
+  const r = importPolicy("script-src 'self' www.googletagmanager.com cdn.example.com; img-src *.google-analytics.com *.analytics.google.com *.googletagmanager.com; connect-src *.google-analytics.com *.analytics.google.com *.googletagmanager.com");
+  assert.deepEqual(r.matched, ['ga4']);
+  assert.deepEqual(r.state.custom.script, ['https://cdn.example.com']);
+  assert.deepEqual(r.unknown, []);
+});
+
+test("I3: GitHub-style scheme-less hosts go to custom, not unknown", () => {
+  const r = importPolicy("default-src 'none'; connect-src 'self' api.github.com github.githubassets.com; img-src 'self' data: avatars.githubusercontent.com");
+  assert.deepEqual(r.state.custom.connect, ['https://api.github.com', 'https://github.githubassets.com']);
+  assert.deepEqual(r.state.custom.img, ['https://avatars.githubusercontent.com']);
+});
+
+test('I3: two policies joined by a comma import the first, with a note', () => {
+  const r = importPolicy("script-src 'self' a.example.com, default-src 'self'; img-src b.example.com");
+  assert.deepEqual(r.state.custom.script, ['https://a.example.com']);
+  assert.deepEqual(r.state.custom.img, []);
+  assert.ok(r.notes.some(n => n.includes('more than one policy')));
+  assert.ok(!JSON.stringify(r.unknown).includes(','));
+});
