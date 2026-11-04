@@ -8,7 +8,7 @@ for f in *.php lib/*.php tests/php/*.php; do
   php -l "$f" > /dev/null
 done
 
-for f in assets/js/*.js; do
+for f in assets/js/*.js sw.js; do
   node --check "$f"
 done
 
