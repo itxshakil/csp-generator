@@ -1,4 +1,5 @@
 // Pure policy logic: no DOM access, so it runs in the browser and under `node --test`.
+import { normalizeOrigin, normalizeSource, wsOrigin, MAX_TAGS } from './sources.js';
 
 export const TAG_DIRS = ['script', 'style', 'img', 'frame', 'connect'];
 
@@ -19,59 +20,10 @@ export const PRESETS = {
   local:    { local: true,  reportonly: true,  reporting: true, jsdelivr: true,  cdnjs: true,  tawk: false, gfonts: true,  ga: false, gtm: false, livewire: false, inlineStyleAttrs: false },
 };
 
+export { normalizeOrigin, normalizeSource, wsOrigin, MAX_TAGS };
+
 const SELF = "'self'";
 const NONCE = "'nonce-{$nonce}'";
-const LOOPBACK = /^(localhost|127\.0\.0\.1)(:|$)/i;
-const HOSTNAME = /^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)*[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/i;
-
-// Turns "app.test:5173", "https://app.test:5173/path" etc. into "https://app.test:5173".
-export function normalizeOrigin(raw) {
-  const input = String(raw ?? '').trim();
-  const fail = error => ({ value: null, error });
-  if (!input) return fail('Enter a host, for example localhost:5173.');
-  if (/[\s'"<>`]/.test(input)) return fail('A host cannot contain spaces, quotes or angle brackets.');
-  const withScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(input) ? input : (LOOPBACK.test(input) ? 'http://' : 'https://') + input;
-  let url;
-  try {
-    url = new URL(withScheme);
-  } catch {
-    return fail('That is not a valid host.');
-  }
-  if (url.protocol !== 'http:' && url.protocol !== 'https:') return fail('Use http:// or https://.');
-  if (!HOSTNAME.test(url.hostname)) return fail('That is not a valid host.');
-  return { value: url.origin, error: null };
-}
-
-const SOURCE_SCHEMES = ['https:', 'wss:', 'http:', 'ws:'];
-export const MAX_TAGS = 50;
-
-// Turns user input into a CSP host source: "cdn.example.com/lib.js" becomes "https://cdn.example.com".
-// Keywords, bare wildcards and anything that could break out of the header are rejected.
-export function normalizeSource(raw) {
-  const input = String(raw ?? '').trim().replace(/,$/, '');
-  const fail = error => ({ value: null, error, warning: null });
-  if (!input) return fail('Enter a host, for example cdn.example.com.');
-  if (/[\s'"<>`;,\\]/.test(input)) return fail("Enter a host or URL. Keywords like 'unsafe-inline' are not allowed here.");
-  const withScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(input) ? input : 'https://' + input;
-  // URL parsers disagree on "*" in hostnames (Chromium percent-encodes it), so the wildcard
-  // label is taken off before parsing and put back afterwards.
-  const wildcard = /^[a-z][a-z0-9+.-]*:\/\/\*\./i.test(withScheme);
-  let url;
-  try {
-    url = new URL(wildcard ? withScheme.replace('://*.', '://') : withScheme);
-  } catch {
-    return fail('That is not a valid host.');
-  }
-  if (!SOURCE_SCHEMES.includes(url.protocol)) return fail('Use https://, wss://, http:// or ws://.');
-  const host = url.hostname;
-  if (!HOSTNAME.test(host) || (!host.includes('.') && host !== 'localhost')) return fail('That is not a valid host.');
-  const value = `${url.protocol}//${wildcard ? '*.' : ''}${host}${url.port ? ':' + url.port : ''}`;
-  const warning = url.protocol === 'http:' || url.protocol === 'ws:'
-    ? 'Insecure source: browsers block it on HTTPS pages as mixed content.'
-    : null;
-  return { value, error: null, warning };
-}
-
 // Rebuilds state from untrusted input (localStorage, share links). Unknown keys and invalid values are dropped.
 export function sanitizeState(raw) {
   const state = structuredClone(DEFAULT_STATE);
@@ -86,10 +38,6 @@ export function sanitizeState(raw) {
     state.tags[dir] = unique(list.map(v => normalizeSource(v).value).filter(Boolean)).slice(0, MAX_TAGS);
   }
   return state;
-}
-
-export function wsOrigin(origin) {
-  return origin.replace(/^http/, 'ws');
 }
 
 // Every source a service needs, by directive. Sources are verified against each vendor's CSP guidance.
