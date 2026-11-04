@@ -3,6 +3,7 @@ import { DEFAULT_STATE, applyPreset, sanitizeState } from './state.js';
 import { track, clarityTag } from './analytics.js';
 import { initConfig } from './ui-config.js';
 import { initOutput } from './ui-output.js';
+import { initTools } from './ui-tools.js';
 
 const STORAGE_KEY = 'csp-state';
 const formStartedAt = Date.now();
@@ -106,6 +107,7 @@ wirePage();
 // Restored settings are saved straight back, which rewrites old (v1) or tampered values in the clean v2 shape.
 if (restored) store.update(() => {});
 else store.applyPreset('strict');
+initTools(store);
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
