@@ -80,7 +80,7 @@ if ($isJson) {
     exit;
 }
 
-// Direct visit with no POST — redirect home
+// Direct visit with no POST - redirect home
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: ' . REDIRECT_URL);
     exit;
@@ -105,7 +105,7 @@ $delay         = REDIRECT_DELAY;
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title><?= $success ? 'PDF sent — CSP Generator' : 'Something went wrong — CSP Generator' ?></title>
+<title><?= $success ? 'PDF sent - CSP Generator' : 'Something went wrong - CSP Generator' ?></title>
 <?php if ($success): ?>
 <meta http-equiv="refresh" content="<?= $delay ?>;url=<?= $safeRedirect ?>">
 <?php endif; ?>

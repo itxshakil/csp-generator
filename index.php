@@ -16,21 +16,21 @@ $faq = faq_items();
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Laravel CSP Generator — Free Content Security Policy Builder</title>
-<meta name="description" content="Generate a production-ready Content Security Policy for your Laravel app. Nonce-based, Vite-ready, Livewire-aware. Free and instant.">
+<title>Laravel CSP Generator - Free Content Security Policy Builder</title>
+<meta name="description" content="Generate a production-ready Content Security Policy for your Laravel app from the services you use: Stripe, GA4, Intercom, Sentry and more. Nonce-based, explained, free.">
 <link rel="canonical" href="https://csp-generator.shakiltech.com">
 <meta property="og:title" content="Laravel CSP Generator">
-<meta property="og:description" content="Generate a production-ready CSP for your Laravel app — nonce-based, Vite-ready, Livewire-aware. Free and instant.">
+<meta property="og:description" content="Generate a production-ready CSP for your Laravel app from the services you use. Nonce-based, explained, free.">
 <meta property="og:url" content="https://csp-generator.shakiltech.com">
 <meta name="twitter:card" content="summary_large_image">
-<!-- Open Graph — complete set -->
+<!-- Open Graph - complete set -->
 <meta property="og:type"        content="website">
 <meta property="og:site_name"   content="CSP Generator by Shakil">
 <meta property="og:image"       content="https://csp-generator.shakiltech.com/favicon.svg">
-<meta property="og:image:alt"   content="Laravel CSP Generator — Free Content Security Policy Builder">
-<!-- Twitter card — complete set -->
-<meta name="twitter:title"       content="Laravel CSP Generator — Free CSP Builder">
-<meta name="twitter:description" content="Generate a production-ready CSP for your Laravel app — nonce-based, Vite-ready, Livewire-aware. Free and instant.">
+<meta property="og:image:alt"   content="Laravel CSP Generator - Free Content Security Policy Builder">
+<!-- Twitter card - complete set -->
+<meta name="twitter:title"       content="Laravel CSP Generator - Free CSP Builder">
+<meta name="twitter:description" content="Generate a production-ready CSP for your Laravel app from the services you use. Nonce-based, explained, free.">
 <meta name="twitter:image"       content="https://csp-generator.shakiltech.com/favicon.svg">
 <meta name="twitter:image:alt"   content="Laravel CSP Generator">
 <!-- Favicon -->
@@ -47,7 +47,7 @@ $faq = faq_items();
 <!-- theme-color: dual light/dark -->
 <meta name="theme-color" content="#F8F7F4" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#18151F"  media="(prefers-color-scheme: dark)">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Laravel CSP Generator","url":"https://csp-generator.shakiltech.com","description":"Free tool to generate production-ready Content Security Policy for Laravel","applicationCategory":"DeveloperApplication","operatingSystem":"Any","featureList":["Nonce-based CSP","Vite HMR support","Livewire-aware","Policy strength scoring","Violation reporting"],"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"creator":{"@type":"Person","name":"Shakil","url":"https://blog.shakiltech.com"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Laravel CSP Generator","url":"https://csp-generator.shakiltech.com","description":"Free tool to generate production-ready Content Security Policy for Laravel","applicationCategory":"DeveloperApplication","operatingSystem":"Any","featureList":["Nonce-based CSP","27 third-party integrations","Production and local policies from one config","Explained policy score","Header size meter","Laravel middleware, spatie preset, nginx, Apache and meta tag output","Violation reporting"],"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"creator":{"@type":"Person","name":"Shakil","url":"https://blog.shakiltech.com"}}</script>
 <script type="application/ld+json"><?= faq_jsonld($faq) ?></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -74,7 +74,7 @@ $faq = faq_items();
 <section class="hero">
   <div class="hero-badge"><div class="hero-badge-dot"></div> Laravel Security</div>
   <h1>Generate a production-ready<br><em>Content Security Policy</em></h1>
-  <p class="hero-sub">Configure your directives, copy the middleware, deploy with confidence. No signup needed.</p>
+  <p class="hero-sub">Pick the services your app uses, copy the middleware, deploy with confidence. No signup needed.</p>
   <div class="hero-tags">
     <span class="tag">Nonce-based</span>
     <span class="tag">Vite-ready</span>
@@ -197,10 +197,10 @@ $faq = faq_items();
     <div class="guide-left">
       <div class="guide-label">Free PDF Guide</div>
       <div class="guide-title">Laravel CSP Quick Reference</div>
-      <p class="guide-sub">4 pages. Every directive, the checklist, common mistakes, and quick-start snippets — without keeping this tab open.</p>
+      <p class="guide-sub">4 pages. Every directive, the checklist, common mistakes, and quick-start snippets - without keeping this tab open.</p>
       <div class="guide-items">
         <div class="guide-item"><div class="guide-item-dot"></div><div class="guide-item-text"><strong>All 13 directives</strong> with values and plain-English descriptions</div></div>
-        <div class="guide-item"><div class="guide-item-dot"></div><div class="guide-item-text"><strong>Pre-enforcement checklist</strong> — 12 items before enforcement</div></div>
+        <div class="guide-item"><div class="guide-item-dot"></div><div class="guide-item-text"><strong>Pre-enforcement checklist</strong> - 12 items before enforcement</div></div>
         <div class="guide-item"><div class="guide-item-dot"></div><div class="guide-item-text"><strong>5 common mistakes</strong> and how to avoid them</div></div>
         <div class="guide-item"><div class="guide-item-dot"></div><div class="guide-item-text"><strong>Blade, Vite & Livewire</strong> quick-start snippets</div></div>
       </div>
@@ -244,38 +244,38 @@ $faq = faq_items();
   <div class="section-intro">
     <div class="section-label">Why this tool</div>
     <div class="section-title">Everything you need to ship secure</div>
-    <p class="section-sub">Not just a header builder — a complete workflow from configuration to deployment.</p>
+    <p class="section-sub">Not just a header builder - a complete workflow from configuration to deployment.</p>
   </div>
   <div class="feat-grid">
     <div class="feat-card">
       <div class="feat-icon">🎯</div>
       <div class="feat-title">Nonce-based by default</div>
-      <div class="feat-body">Every policy uses cryptographic nonces — never unsafe-inline. The middleware handles generation, Blade sharing, and Vite registration automatically.</div>
+      <div class="feat-body">Every policy uses per-request nonces, never 'unsafe-inline' for scripts. The middleware generates the nonce, shares it with Blade and registers it with Vite.</div>
     </div>
     <div class="feat-card">
-      <div class="feat-icon">🚨</div>
-      <div class="feat-title">Violation reporting ready</div>
-      <div class="feat-body">Adds report-uri and report-to so browsers send blocked-resource reports to your endpoint.</div>
+      <div class="feat-icon">🔌</div>
+      <div class="feat-title">27 integrations, explained</div>
+      <div class="feat-body">Stripe, PayPal, GA4, Intercom, Google Maps, Sentry and more. Every host comes with the reason it is needed, following each vendor's CSP documentation.</div>
     </div>
     <div class="feat-card">
       <div class="feat-icon">⚡</div>
-      <div class="feat-title">Environment-aware</div>
-      <div class="feat-body">Local dev mode adds Vite's HMR WebSocket and removes upgrade-insecure-requests automatically. Nothing leaks to production.</div>
-    </div>
-    <div class="feat-card">
-      <div class="feat-icon">📋</div>
-      <div class="feat-title">Dynamic checklist</div>
-      <div class="feat-body">The pre-enforcement checklist adapts to your config. Livewire items appear only when Livewire is on. Report-only mode tells you what to do next.</div>
+      <div class="feat-title">One config, two environments</div>
+      <div class="feat-body">Production and Local output from the same settings. The middleware branches on the environment, so the Vite dev server never reaches production.</div>
     </div>
     <div class="feat-card">
       <div class="feat-icon">⚖️</div>
-      <div class="feat-title">Policy strength score</div>
-      <div class="feat-body">Real-time score from D to A+ that grades your policy on nonce usage, HTTPS enforcement, allowlist size, and reporting coverage.</div>
+      <div class="feat-title">A score that explains itself</div>
+      <div class="feat-body">Every point lost is listed: 'unsafe-eval', CDNs that serve script gadgets, wildcard hosts, report-only mode. A size meter warns before nginx starts returning 502.</div>
     </div>
     <div class="feat-card">
-      <div class="feat-icon">🔒</div>
-      <div class="feat-title">Strict CSS directives</div>
-      <div class="feat-body">Correctly separates style-src, style-src-elem, and style-src-attr. style-src-attr is 'none' by default, with a clear opt-in when a widget needs inline styles.</div>
+      <div class="feat-icon">🧩</div>
+      <div class="feat-title">Laravel and beyond</div>
+      <div class="feat-body">Middleware, report controller and Pest test for Laravel, plus a spatie/laravel-csp preset, nginx, Apache and a meta tag.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">📋</div>
+      <div class="feat-title">A checklist that follows your stack</div>
+      <div class="feat-body">Livewire, Inertia, Filament, Cloudflare and full-page caching each add the steps they need. Tick them off as you go, and export a summary for your auditor.</div>
     </div>
   </div>
 </section>
