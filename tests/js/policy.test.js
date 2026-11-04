@@ -57,3 +57,32 @@ test('default Vite origin is localhost:5173', () => {
   assert.ok(dir(dirs, 'script-src').includes('http://localhost:5173'));
   assert.ok(dir(dirs, 'connect-src').includes('ws://localhost:5173'));
 });
+
+test('GA4 gets every endpoint gtag uses', () => {
+  const dirs = buildDirectives(withPreset('strict', { ga: true }));
+  assert.ok(dir(dirs, 'script-src').includes('https://www.googletagmanager.com'));
+  for (const name of ['connect-src', 'img-src']) {
+    for (const host of ['https://*.google-analytics.com', 'https://*.analytics.google.com', 'https://*.googletagmanager.com']) {
+      assert.ok(dir(dirs, name).includes(host), `${name} ${host}`);
+    }
+  }
+});
+
+test('Tawk.to gets every directive its widget needs', () => {
+  const dirs = buildDirectives(withPreset('strict', { tawk: true }));
+  for (const name of ['script-src', 'style-src', 'font-src', 'img-src', 'media-src', 'frame-src']) {
+    assert.ok(dir(dirs, name).includes('https://*.tawk.to'), name);
+  }
+  assert.ok(dir(dirs, 'connect-src').includes('https://*.tawk.to'));
+  assert.ok(dir(dirs, 'connect-src').includes('wss://*.tawk.to'));
+  assert.ok(dir(dirs, 'img-src').includes('https://tawk.link'));
+});
+
+test('a host shared by two services appears once', () => {
+  const dirs = buildDirectives(withPreset('strict', { ga: true, gtm: true }));
+  assert.equal(dir(dirs, 'script-src').filter(s => s === 'https://www.googletagmanager.com').length, 1);
+});
+
+test('media-src only appears when a service needs it', () => {
+  assert.equal(dir(buildDirectives(withPreset('standard')), 'media-src').length, 0);
+});

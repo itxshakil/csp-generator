@@ -45,29 +45,42 @@ export function wsOrigin(origin) {
   return origin.replace(/^http/, 'ws');
 }
 
+// Every source a service needs, by directive. Sources are verified against each vendor's CSP guidance.
+export const SERVICE_SOURCES = {
+  jsdelivr: { script: ['https://cdn.jsdelivr.net'] },
+  cdnjs: {
+    script: ['https://cdnjs.cloudflare.com'], style: ['https://cdnjs.cloudflare.com'],
+    font: ['https://cdnjs.cloudflare.com'], img: ['https://cdnjs.cloudflare.com'],
+  },
+  gfonts: { style: ['https://fonts.googleapis.com'], font: ['https://fonts.gstatic.com'] },
+  tawk: {
+    script: ['https://*.tawk.to'], style: ['https://*.tawk.to'], font: ['https://*.tawk.to'],
+    img: ['https://*.tawk.to', 'https://tawk.link'], media: ['https://*.tawk.to'], frame: ['https://*.tawk.to'],
+    connect: ['https://*.tawk.to', 'wss://*.tawk.to'],
+  },
+  ga: {
+    script: ['https://www.googletagmanager.com'],
+    img: ['https://*.google-analytics.com', 'https://*.analytics.google.com', 'https://*.googletagmanager.com'],
+    connect: ['https://*.google-analytics.com', 'https://*.analytics.google.com', 'https://*.googletagmanager.com'],
+  },
+  gtm: { script: ['https://www.googletagmanager.com'], img: ['https://www.googletagmanager.com'] },
+};
+
+const SERVICE_ORDER = ['jsdelivr', 'cdnjs', 'gfonts', 'tawk', 'ga', 'gtm'];
+
+const unique = list => [...new Set(list)];
+
 export function buildDirectives(state) {
-  const on = (flag, sources) => (flag ? sources : []);
   const vite = state.local ? [normalizeOrigin(state.viteOrigin).value ?? DEFAULT_STATE.viteOrigin] : [];
-  const script = [SELF, NONCE, ...vite,
-    ...on(state.jsdelivr, ['https://cdn.jsdelivr.net']),
-    ...on(state.cdnjs, ['https://cdnjs.cloudflare.com']),
-    ...on(state.tawk, ['https://embed.tawk.to']),
-    ...on(state.ga, ['https://www.google-analytics.com']),
-    ...on(state.gtm, ['https://www.googletagmanager.com']),
-    ...state.tags.script];
-  const style = [SELF, NONCE, ...vite,
-    ...on(state.gfonts, ['https://fonts.googleapis.com']),
-    ...on(state.cdnjs, ['https://cdnjs.cloudflare.com']),
-    ...state.tags.style];
-  const font = [SELF, 'data:',
-    ...on(state.gfonts, ['https://fonts.gstatic.com']),
-    ...on(state.cdnjs, ['https://cdnjs.cloudflare.com'])];
-  const img = [SELF, 'data:', ...on(state.cdnjs, ['https://cdnjs.cloudflare.com']), ...state.tags.img];
-  const frame = [SELF, ...state.tags.frame];
-  const connect = [SELF,
-    ...vite.flatMap(origin => [wsOrigin(origin), origin]),
-    ...on(state.ga, ['https://www.google-analytics.com']),
-    ...state.tags.connect];
+  const fromServices = kind => SERVICE_ORDER.filter(k => state[k]).flatMap(k => SERVICE_SOURCES[k][kind] ?? []);
+
+  const script = unique([SELF, NONCE, ...vite, ...fromServices('script'), ...state.tags.script]);
+  const style = unique([SELF, NONCE, ...vite, ...fromServices('style'), ...state.tags.style]);
+  const font = unique([SELF, 'data:', ...fromServices('font')]);
+  const img = unique([SELF, 'data:', ...fromServices('img'), ...state.tags.img]);
+  const media = unique([SELF, ...fromServices('media')]);
+  const frame = unique([SELF, ...fromServices('frame'), ...state.tags.frame]);
+  const connect = unique([SELF, ...vite.flatMap(origin => [wsOrigin(origin), origin]), ...fromServices('connect'), ...state.tags.connect]);
 
   const directives = [
     { name: 'default-src', sources: [SELF] },
@@ -77,6 +90,7 @@ export function buildDirectives(state) {
     { name: 'style-src-attr', sources: ["'none'"] },
     { name: 'font-src', sources: font },
     { name: 'img-src', sources: img },
+    ...(media.length > 1 ? [{ name: 'media-src', sources: media }] : []),
     { name: 'frame-src', sources: frame },
     { name: 'connect-src', sources: connect },
     { name: 'object-src', sources: ["'none'"] },
