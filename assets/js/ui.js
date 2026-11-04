@@ -1,363 +1,66 @@
-// DOM wiring. The only module that touches the page.
-import { DEFAULT_STATE, PRESETS, TAG_DIRS, TOGGLE_KEYS, buildDirectives, policyString, score, grade, normalizeOrigin, normalizeSource, sanitizeState, MAX_TAGS } from './policy.js';
+// Boot: owns the live state, persistence, and the page-level widgets. Panels get the store passed in.
+import { DEFAULT_STATE, PRESETS, sanitizeState } from './state.js';
 import { track, clarityTag } from './analytics.js';
-import { escapeHtml, highlightPolicy } from './highlight.js';
+import { initConfig } from './ui-config.js';
+import { initOutput } from './ui-output.js';
 
 const STORAGE_KEY = 'csp-state';
-
-const S = structuredClone(DEFAULT_STATE);
-let currentTab = 'header';
-let currentPreset = 'strict';
-let lastGrade = '';
 const formStartedAt = Date.now();
-
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
-function saveState() {
+function save(state) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(S));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch (e) {
     console.warn('Could not save settings to localStorage', e);
   }
 }
 
-// ── Toggles, presets, tags ──────────────────────────────────────────────────
-function syncToggles() {
-  TOGGLE_KEYS.forEach(k => $('#t-' + k)?.classList.toggle('on', Boolean(S[k])));
-  syncVite();
+function createStore() {
+  const listeners = [];
+  const store = {
+    state: structuredClone(DEFAULT_STATE),
+    preset: '',
+    onChange(fn) { listeners.push(fn); },
+    // Every user change goes through here. Inputs are validated where they are typed, so the mutator never sees junk.
+    update(mutator, preset = '') {
+      mutator(store.state);
+      store.preset = preset;
+      save(store.state);
+      listeners.forEach(fn => fn());
+    },
+    applyPreset(name) {
+      store.update(s => {
+        Object.assign(s, structuredClone(PRESETS[name]));
+        s.custom = structuredClone(DEFAULT_STATE.custom);
+      }, name);
+      track('select_preset', { preset: name });
+      clarityTag('preset', name);
+    },
+  };
+  return store;
 }
 
-function syncVite() {
-  $('#vite-block').classList.toggle('is-hidden', !S.local);
-  const inp = $('#vite-origin');
-  if (document.activeElement !== inp) inp.value = S.viteOrigin;
-}
-
-function onViteInput(e) {
-  const { value, error } = normalizeOrigin(e.target.value);
-  const msg = $('#vite-msg');
-  e.target.setAttribute('aria-invalid', String(Boolean(error)));
-  msg.textContent = error ? `${error} Still using ${S.viteOrigin}.` : '';
-  if (!value || value === S.viteOrigin) return;
-  S.viteOrigin = value;
-  render();
-  saveState();
-}
-
-function renderTags() {
-  TAG_DIRS.forEach(dir => {
-    const list = $('#tags-' + dir);
-    if (!list) return;
-    list.replaceChildren(...S.tags[dir].map(val => {
-      const chip = document.createElement('span');
-      chip.className = 'dtag';
-      chip.append(val);
-      const x = document.createElement('button');
-      x.type = 'button';
-      x.className = 'dtag-x';
-      x.textContent = '×';
-      x.setAttribute('aria-label', `Remove ${val}`);
-      x.addEventListener('click', () => removeTag(dir, val));
-      chip.append(x);
-      return chip;
-    }));
-  });
-}
-
-function markPreset(name) {
-  $$('.preset').forEach(c => c.classList.toggle('active', c.dataset.preset === name));
-}
-
-function applyPreset(name) {
-  currentPreset = name;
-  Object.assign(S, PRESETS[name]);
-  S.tags = structuredClone(DEFAULT_STATE.tags);
-  syncToggles();
-  renderTags();
-  markPreset(name);
-  render();
-  saveState();
-  track('select_preset', { preset: name });
-  clarityTag('preset', name);
-}
-
-function toggle(key) {
-  S[key] = !S[key];
-  $('#t-' + key).classList.toggle('on', S[key]);
-  if (key === 'local') syncVite();
-  currentPreset = '';
-  markPreset('');
-  render();
-  saveState();
-  track('toggle_feature', { feature: key, enabled: S[key] });
-}
-
-function showTagMessage(dir, text, isError) {
-  const msg = $('#msg-' + dir);
-  msg.textContent = text ?? '';
-  msg.classList.toggle('is-error', Boolean(isError));
-  $(`.tag-inp[data-dir="${dir}"]`).setAttribute('aria-invalid', String(Boolean(isError)));
-}
-
-// Returns true when the input was consumed (added, or already present).
-function addTag(dir, raw) {
-  if (!raw.trim()) return true;
-  const { value, error, warning } = normalizeSource(raw);
-  if (error) {
-    showTagMessage(dir, error, true);
+// Returns true when saved settings were found and loaded.
+function restore(store) {
+  let raw;
+  try {
+    raw = localStorage.getItem(STORAGE_KEY);
+  } catch (e) {
+    console.warn('localStorage unavailable', e);
     return false;
   }
-  if (S.tags[dir].includes(value)) {
-    showTagMessage(dir, `${value} is already in the list.`, false);
-    return true;
-  }
-  if (S.tags[dir].length >= MAX_TAGS) {
-    showTagMessage(dir, `You can add up to ${MAX_TAGS} hosts here.`, true);
+  if (!raw) return false;
+  let saved;
+  try {
+    saved = JSON.parse(raw);
+  } catch (e) {
+    console.warn('Ignoring unreadable saved settings', e);
     return false;
   }
-  S.tags[dir].push(value);
-  showTagMessage(dir, warning ?? (value !== raw.trim() ? `Added as ${value}.` : ''), false);
-  renderTags();
-  render();
-  saveState();
+  store.state = sanitizeState(saved);
   return true;
-}
-
-function removeTag(dir, val) {
-  S.tags[dir] = S.tags[dir].filter(v => v !== val);
-  renderTags();
-  render();
-  saveState();
-}
-
-function onTagKey(e) {
-  const inp = e.target;
-  const dir = inp.dataset.dir;
-  if (e.key === 'Enter' || e.key === ',') {
-    e.preventDefault();
-    if (addTag(dir, inp.value)) inp.value = '';
-  } else if (e.key === 'Backspace' && !inp.value && S.tags[dir].length) {
-    removeTag(dir, S.tags[dir][S.tags[dir].length - 1]);
-  }
-}
-
-// ── Output ──────────────────────────────────────────────────────────────────
-const pad = (s, n) => s + ' '.repeat(Math.max(0, n - s.length));
-
-function copyEl(id, btn) {
-  const text = document.getElementById(id).innerText;
-  navigator.clipboard.writeText(text).then(() => {
-    const original = btn.textContent;
-    btn.textContent = 'Copied!';
-    btn.classList.add('ok');
-    setTimeout(() => { btn.textContent = original; btn.classList.remove('ok'); }, 1800);
-    track('copy_output', { element: id });
-  }, err => {
-    btn.textContent = 'Copy failed';
-    console.error('Clipboard write failed', err);
-  });
-}
-
-function download(id, name) {
-  const a = document.createElement('a');
-  a.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(document.getElementById(id).innerText);
-  a.download = name;
-  a.click();
-  track('download_middleware');
-}
-
-function scoreBar(cls, pct, extraClass = '') {
-  return `<div class="score-track ${extraClass}"><div class="score-fill ${cls}" data-width="${pct}"></div></div>`;
-}
-
-function renderHeaderTab(dirs, pol, sc, sm, hn) {
-  return `
-    <div class="score-row">
-      <span class="score-label">Policy strength</span>
-      <span class="score-chip ${sm.cls}">${sm.label} · ${sc}/100</span>
-    </div>
-    ${scoreBar(sm.cls, sc)}
-    <div class="code-block">
-      <div class="code-hdr">
-        <span class="code-title">${hn}</span>
-        <div class="code-actions"><button type="button" class="cbtn" data-copy="pre-hdr">Copy</button></div>
-      </div>
-      <pre id="pre-hdr">${highlightPolicy(pol)}</pre>
-    </div>
-    <div class="code-block">
-      <div class="code-hdr"><span class="code-title">Directive breakdown</span></div>
-      <pre>${dirs.map(d => `<span class="sk">${pad(d.name, 24)}</span> <span class="sv">${d.sources.length ? escapeHtml(d.sources.join(' ')) : '(flag)'}</span>`).join('\n')}</pre>
-    </div>`;
-}
-
-function renderPhpTab(dirs, hn) {
-  const policyLines = dirs.map(d => {
-    const v = d.sources.length ? `"${d.name} ${d.sources.join(' ')}"` : `'${d.name}'`;
-    return `        ${escapeHtml(v)},`;
-  }).join('\n');
-  const php = `<span class="sc">private bool $allowReporting;</span>
-
-<span class="sc">public function __construct()
-{
-    $this->allowReporting = !app()->environment(['local', 'testing']);
-}</span>
-
-public function handle(Request $request, Closure $next): Response
-{
-    $nonce = base64_encode(random_bytes(16));
-    View::share(<span class="sn">'cspNonce'</span>, $nonce);
-    Vite::useCspNonce($nonce); <span class="sc">// Don't skip this — @vite() needs it</span>
-
-    $response = $next($request);
-
-    $this->addContentSecurityPolicy($response, $nonce, $request);
-    <span class="sc">// ... addClickjackingProtection, addStrictTransportSecurity, etc.</span>
-
-    return $response;
-}
-
-protected function addContentSecurityPolicy(Response $response, string $nonce, Request $request): void
-{
-    $isLocal = app()->environment('local');
-
-    $policy = [
-${policyLines}
-    ];
-
-    $response->headers->set(<span class="sn">'${hn}'</span>, implode(<span class="sn">'; '</span>, $policy));
-}`;
-  return `
-    <div class="code-block">
-      <div class="code-hdr">
-        <span class="code-title">SecureHeadersMiddleware.php</span>
-        <div class="code-actions">
-          <button type="button" class="cbtn" data-copy="pre-php">Copy</button>
-          <button type="button" class="cbtn" data-download="pre-php" data-filename="SecureHeadersMiddleware.php">Download</button>
-        </div>
-      </div>
-      <pre id="pre-php">${php}</pre>
-    </div>
-    <div class="code-block">
-      <div class="code-hdr"><span class="code-title">Blade — nonce usage</span><div class="code-actions"><button type="button" class="cbtn" data-copy="pre-blade">Copy</button></div></div>
-      <pre id="pre-blade">@vite(['resources/js/app.js'])  <span class="sc">{{-- nonce auto-handled --}}</span>
-&lt;script nonce=<span class="sn">"{{ $cspNonce }}"</span>&gt;...&lt;/script&gt;
-&lt;style  nonce=<span class="sn">"{{ $cspNonce }}"</span>&gt;...&lt;/style&gt;${S.livewire ? `
-@livewireScriptConfig(['nonce' => $cspNonce])  <span class="sc">{{-- Livewire v3 --}}</span>` : ''}</pre>
-    </div>`;
-}
-
-function renderChecklistTab() {
-  const items = [
-    { t: 'ok', tx: '<strong>Vite::useCspNonce($nonce)</strong> called before $next($request)' },
-    { t: 'ok', tx: '<strong>View::share(\'cspNonce\', $nonce)</strong> in middleware' },
-    { t: 'ok', tx: 'All inline <strong>&lt;script&gt;</strong> blocks have <strong>nonce="{{ $cspNonce }}"</strong>' },
-    { t: 'ok', tx: 'All inline <strong>&lt;style&gt;</strong> blocks have <strong>nonce="{{ $cspNonce }}"</strong>' },
-    { t: S.livewire ? 'ok' : 'info', tx: S.livewire
-      ? '<strong>@livewireScripts([\'nonce\' => $cspNonce])</strong> or <strong>@livewireScriptConfig</strong> — nonce passed'
-      : 'Livewire not enabled — if you add it, pass the nonce to <strong>@livewireScripts</strong>' },
-    { t: 'ok', tx: '<strong>onclick=""</strong> and event handler attributes removed from templates' },
-    { t: S.inlineStyleAttrs ? 'warn' : 'ok', tx: S.inlineStyleAttrs
-      ? 'Inline <strong>style=""</strong> attributes allowed. Keep using CSS classes in markup you control.'
-      : '<strong>style=""</strong> attributes replaced with CSS classes' },
-    { t: S.reporting ? 'ok' : 'warn', tx: S.reporting
-      ? 'Violation report route live with <strong>middleware(\'throttle:5\')</strong>'
-      : 'Reporting is off — enable it to catch misconfigurations' },
-    { t: !S.local ? 'ok' : 'warn', tx: S.local
-      ? '<strong>Local dev mode is on</strong> — turn this off before deploying'
-      : 'Production mode — localhost WebSocket not in connect-src' },
-    { t: S.reportonly ? 'warn' : 'ok', tx: S.reportonly
-      ? '<strong>Report-only</strong> — nothing is blocked yet. Run 1–2 weeks then enforce.'
-      : 'Enforcement mode active' },
-    { t: 'info', tx: 'Verify headers at <strong>securityheaders.com</strong> after deploying' },
-  ];
-  const done = items.filter(i => i.t === 'ok').length;
-  const cls = done === items.length ? 'grade-ready' : 'grade-partial';
-  return `
-    <div class="score-row">
-      <span class="score-label">Readiness</span>
-      <span class="score-chip ${cls}">${done}/${items.length} ready</span>
-    </div>
-    ${scoreBar(cls, Math.round(done / items.length * 100), 'score-track--chk')}
-    <div class="chk-list">
-      ${items.map(i => `
-      <div class="chk-row">
-        <div class="chk-icon ${i.t}">${i.t === 'ok' ? '✓' : i.t === 'warn' ? '!' : '→'}</div>
-        <div class="chk-text">${i.tx}</div>
-      </div>`).join('')}
-    </div>`;
-}
-
-function renderReferenceTab() {
-  const rows = [
-    ['default-src', '\'self\'', 'Fallback for any type not explicitly listed'],
-    ['script-src', '\'self\' + nonce', 'JavaScript execution. No nonce = blocked.'],
-    ['style-src', '\'self\' + nonce', 'CSS base fallback. Also governs @import rules.'],
-    ['style-src-elem', '\'self\' + nonce', 'link rel=stylesheet tags and style blocks.'],
-    ['style-src-attr', '\'none\'', 'Inline style= attributes. Block unless a widget needs them.'],
-    ['font-src', '\'self\' data:', 'Font files.'],
-    ['img-src', '\'self\' data:', 'Image loading.'],
-    ['frame-src', '\'self\'', 'iframe sources.'],
-    ['connect-src', '\'self\'', 'fetch(), XHR, WebSockets, SSE.'],
-    ['object-src', '\'none\'', 'Browser plugins. Always block.'],
-    ['base-uri', '\'self\'', 'Prevents base href injection.'],
-    ['frame-ancestors', '\'none\'', 'Clickjacking protection.'],
-    ['upgrade-insecure-requests', '(flag)', 'Auto-upgrade HTTP to HTTPS.'],
-  ];
-  const links = [
-    ['MDN CSP Reference', 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy'],
-    ['Grade your headers', 'https://securityheaders.com'],
-    ['CSP Evaluator', 'https://csp-evaluator.withgoogle.com'],
-    ['Violation reporting', 'https://report-uri.com'],
-    ['Spatie laravel-csp', 'https://github.com/spatie/laravel-csp'],
-  ];
-  return `
-    <div class="code-block">
-      <div class="code-hdr"><span class="code-title">Directive reference</span></div>
-      <table class="dir-table"><tbody>
-        ${rows.map(([k, v, d]) => `<tr><td>${k}</td><td>${v}</td><td>${d}</td></tr>`).join('')}
-      </tbody></table>
-    </div>
-    <div class="code-block">
-      <div class="code-hdr"><span class="code-title">Useful links</span></div>
-      <pre class="link-list">${links.map(([l, u]) => `<a href="${u}" target="_blank" rel="noopener">↗ ${l}</a>`).join('')}</pre>
-    </div>`;
-}
-
-function render() {
-  const dirs = buildDirectives(S);
-  const pol = policyString(dirs);
-  const sc = score(S);
-  const sm = grade(sc);
-  if (sm.label !== lastGrade) {
-    lastGrade = sm.label;
-    track('policy_score', { score: sc, grade: sm.label });
-    clarityTag('score_grade', sm.label);
-  }
-  const hn = S.reportonly ? 'Content-Security-Policy-Report-Only' : 'Content-Security-Policy';
-  const body = $('#out-body');
-
-  if (currentTab === 'header') body.innerHTML = renderHeaderTab(dirs, pol, sc, sm, hn);
-  else if (currentTab === 'php') body.innerHTML = renderPhpTab(dirs, hn);
-  else if (currentTab === 'checklist') body.innerHTML = renderChecklistTab();
-  else body.innerHTML = renderReferenceTab();
-
-  // Widths go through the CSSOM: style="" attributes are blocked by our own style-src-attr 'none'.
-  $$('[data-width]', body).forEach(el => { el.style.width = el.dataset.width + '%'; });
-
-  const cnt = $('#count-scripts');
-  if (cnt) {
-    const n = ['jsdelivr', 'cdnjs', 'tawk', 'ga', 'gtm'].filter(k => S[k]).length + S.tags.script.length;
-    cnt.textContent = n || '';
-    cnt.classList.toggle('is-hidden', !n);
-  }
-}
-
-function setTab(t) {
-  currentTab = t;
-  $$('.otab').forEach(el => el.classList.toggle('active', el.dataset.tab === t));
-  render();
-  track('switch_tab', { tab: t });
 }
 
 // ── Guide form ──────────────────────────────────────────────────────────────
@@ -393,54 +96,19 @@ async function submitGuide(btn) {
   clarityTag('lead', 'true');
 }
 
-// ── Wiring ──────────────────────────────────────────────────────────────────
-function wire() {
-  $$('[data-preset]').forEach(el => el.addEventListener('click', () => applyPreset(el.dataset.preset)));
-  $('[data-action="reset"]').addEventListener('click', () => applyPreset(currentPreset || 'strict'));
-  $$('[data-section]').forEach(el => el.addEventListener('click', () => $('#sec-' + el.dataset.section).classList.toggle('open')));
-  $$('[data-toggle]').forEach(el => el.addEventListener('click', () => toggle(el.dataset.toggle)));
-  $$('.tag-wrap').forEach(w => w.addEventListener('click', () => $('.tag-inp', w).focus()));
-  $$('.tag-inp').forEach(inp => inp.addEventListener('keydown', onTagKey));
-  $('#vite-origin').addEventListener('input', onViteInput);
-  $('#vite-origin').addEventListener('blur', e => { if (e.target.getAttribute('aria-invalid') !== 'true') e.target.value = S.viteOrigin; });
+function wirePage() {
   $$('.faq-q').forEach(b => b.addEventListener('click', () => b.closest('.faq-item').classList.toggle('open')));
-  $$('[data-tab]').forEach(el => el.addEventListener('click', () => setTab(el.dataset.tab)));
   $('[data-action="submit-guide"]').addEventListener('click', e => submitGuide(e.currentTarget));
-  $('#out-body').addEventListener('click', e => {
-    const copyBtn = e.target.closest('[data-copy]');
-    if (copyBtn) copyEl(copyBtn.dataset.copy, copyBtn);
-    const dlBtn = e.target.closest('[data-download]');
-    if (dlBtn) download(dlBtn.dataset.download, dlBtn.dataset.filename);
-  });
 }
 
-function restore() {
-  let raw;
-  try {
-    raw = localStorage.getItem(STORAGE_KEY);
-  } catch (e) {
-    console.warn('localStorage unavailable', e);
-    return false;
-  }
-  if (!raw) return false;
-  let saved;
-  try {
-    saved = JSON.parse(raw);
-  } catch (e) {
-    console.warn('Ignoring unreadable saved settings', e);
-    return false;
-  }
-  Object.assign(S, sanitizeState(saved));
-  currentPreset = '';
-  markPreset('');
-  syncToggles();
-  renderTags();
-  render();
-  return true;
-}
-
-wire();
-if (!restore()) applyPreset('strict');
+const store = createStore();
+const restored = restore(store);
+initConfig(store);
+initOutput(store);
+wirePage();
+// Restored settings are saved straight back, which rewrites old (v1) or tampered values in the clean v2 shape.
+if (restored) store.update(() => {});
+else store.applyPreset('strict');
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
