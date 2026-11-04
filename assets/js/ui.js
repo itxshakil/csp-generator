@@ -1,6 +1,7 @@
 // DOM wiring. The only module that touches the page.
 import { DEFAULT_STATE, PRESETS, TAG_DIRS, TOGGLE_KEYS, buildDirectives, policyString, score, grade, normalizeOrigin } from './policy.js';
 import { track, clarityTag } from './analytics.js';
+import { escapeHtml, highlightPolicy } from './highlight.js';
 
 const STORAGE_KEY = 'csp-state';
 
@@ -12,10 +13,6 @@ const formStartedAt = Date.now();
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
-
-function escapeHtml(s) {
-  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
 
 function saveState() {
   try {
@@ -125,17 +122,6 @@ function onTagKey(e) {
 }
 
 // ── Output ──────────────────────────────────────────────────────────────────
-function hl(s) {
-  return escapeHtml(s)
-    .replace(/([a-z][-a-z]+(?:-src|-ancestors|-uri|-requests|-content)*)(?=\s|;|$)/g, '<span class="sk">$1</span>')
-    .replace(/'self'/g, "<span class='sv'>'self'</span>")
-    .replace(/'none'/g, "<span class='sb'>'none'</span>")
-    .replace(/'nonce-\{\$nonce\}'/g, "<span class='sn'>'nonce-{$nonce}'</span>")
-    .replace(/(https?:\/\/[^\s;]+)/g, "<span class='su'>$1</span>")
-    .replace(/(wss?:\/\/[^\s;]+)/g, "<span class='su'>$1</span>")
-    .replace(/\/api\/csp-violation-report/g, "<span class='su'>/api/csp-violation-report</span>");
-}
-
 const pad = (s, n) => s + ' '.repeat(Math.max(0, n - s.length));
 
 function copyEl(id, btn) {
@@ -176,7 +162,7 @@ function renderHeaderTab(dirs, pol, sc, sm, hn) {
         <span class="code-title">${hn}</span>
         <div class="code-actions"><button type="button" class="cbtn" data-copy="pre-hdr">Copy</button></div>
       </div>
-      <pre id="pre-hdr">${hl(pol)}</pre>
+      <pre id="pre-hdr">${highlightPolicy(pol)}</pre>
     </div>
     <div class="code-block">
       <div class="code-hdr"><span class="code-title">Directive breakdown</span></div>
