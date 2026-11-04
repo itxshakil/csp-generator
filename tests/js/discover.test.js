@@ -5,7 +5,7 @@ import { resourcesFromDocument, proposeConfig, gradeHeaders } from '../../assets
 // A tiny stand-in for a DOMParser document: elements are {tag, attrs, text}.
 function fakeDoc(elements) {
   const matches = (el, sel) => {
-    const m = /^([a-z]+)(.*)$/.exec(sel);
+    const m = /^([a-z][a-z-]*)(.*)$/.exec(sel);
     if (el.tag !== m[1]) return false;
     for (const [, attr, op, val] of m[2].matchAll(/\[([a-z-]+)(?:(~?=)([a-z|]+))?\]/g)) {
       const v = el.attrs[attr];
@@ -110,4 +110,23 @@ test('gradeHeaders says when the live policy matches', () => {
 test('gradeHeaders flags an oversized policy', () => {
   const big = "default-src 'self'; img-src " + Array.from({ length: 300 }, (_, i) => `https://h${i}.example-long-host.com`).join(' ');
   assert.ok(gradeHeaders([['content-security-policy', big]], GENERATED).some(f => f.id === 'csp-size' && f.level !== 'ok'));
+});
+
+import { inertHtml } from '../../assets/js/discover.js';
+
+test('inertHtml renames style elements and attributes so parsing them never touches our CSP', () => {
+  const html = '<html><head><style>.a{}</style><STYLE nonce="x">.b{}</STYLE></head><body><div style="color:red" title="a style=b"><p data-style="k">x</p></div><script src="/a.js"></script></body></html>';
+  const out = inertHtml(html);
+  assert.ok(!/<style\b/i.test(out), out);
+  assert.ok(!out.includes(' style="color:red"'), out);
+  assert.ok(out.includes('<x-csp-style>.a{}</x-csp-style>'));
+  assert.ok(out.includes('<x-csp-style nonce="x">'));
+  assert.ok(out.includes('<script src="/a.js"></script>'));
+  assert.ok(out.includes('title="a style=b"'), 'attribute values are left alone');
+  assert.ok(out.includes('data-style="k"'), 'other attributes named like style are left alone');
+});
+
+test('resourcesFromDocument counts renamed style elements', () => {
+  const doc = fakeDoc([{ tag: 'x-csp-style', attrs: {} }, { tag: 'x-csp-style', attrs: { nonce: 'n' } }]);
+  assert.deepEqual(resourcesFromDocument(doc, 'https://a.com').inline, { scripts: 0, styles: 1 });
 });

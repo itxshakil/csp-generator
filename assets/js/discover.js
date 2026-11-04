@@ -47,9 +47,25 @@ export function resourcesFromDocument(doc, baseUrl) {
 
   const inline = {
     scripts: all('script').filter(el => !el.hasAttribute('src') && !el.hasAttribute('nonce') && EXECUTABLE.has((el.getAttribute('type') ?? '').trim().toLowerCase())).length,
-    styles: all('style').filter(el => !el.hasAttribute('nonce')).length,
+    styles: [...all('style'), ...all('x-csp-style')].filter(el => !el.hasAttribute('nonce')).length,
   };
   return { resources: [...found.values()], inline };
+}
+
+const OPEN_TAG = /<([a-zA-Z][\w:.-]*)((?:\s+[^\s=>/]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+))?)*)(\s*\/?)>/g;
+const ATTR = /(\s+)([^\s=>/]+)((?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+))?)/g;
+
+// Chromium applies our page's CSP to documents built with DOMParser and reports their inline styles as
+// violations, although nothing is applied. Renaming style elements and attributes first keeps the parse
+// silent; resourcesFromDocument still counts the renamed elements.
+export function inertHtml(html) {
+  return String(html ?? '')
+    .replace(OPEN_TAG, (tag, name, attrs, end) => {
+      const renamed = name.toLowerCase() === 'style' ? 'x-csp-style' : name;
+      const safeAttrs = attrs.replace(ATTR, (a, space, key, value) => (key.toLowerCase() === 'style' ? `${space}data-csp-style${value}` : a));
+      return `<${renamed}${safeAttrs}${end}>`;
+    })
+    .replace(/<\/style\s*>/gi, '</x-csp-style>');
 }
 
 const KINDS = ['script', 'style', 'font', 'img', 'media', 'frame', 'connect', 'form', 'worker'];
