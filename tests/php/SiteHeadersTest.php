@@ -4,17 +4,6 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../../lib/site-headers.php';
 
-function render_index(): array
-{
-    ob_start();
-    $cspNonce = null;
-    (function () use (&$cspNonce) {
-        include __DIR__ . '/../../index.php';
-        $cspNonce = $nonce ?? null;
-    })();
-    return [ob_get_clean(), $cspNonce];
-}
-
 return [
     'site_nonce is 16 random bytes in base64' => function () {
         $a = site_nonce();

@@ -3,10 +3,12 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/lib/site-headers.php';
+require_once __DIR__ . '/lib/faq.php';
 
 $nonce = site_nonce();
 send_site_headers($nonce, request_origin());
 $n = htmlspecialchars($nonce, ENT_QUOTES);
+$faq = faq_items();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -45,7 +47,7 @@ $n = htmlspecialchars($nonce, ENT_QUOTES);
 <meta name="theme-color" content="#F8F7F4" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#18151F"  media="(prefers-color-scheme: dark)">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Laravel CSP Generator","url":"https://csp-generator.shakiltech.com","description":"Free tool to generate production-ready Content Security Policy for Laravel","applicationCategory":"DeveloperApplication","operatingSystem":"Any","featureList":["Nonce-based CSP","Vite HMR support","Livewire-aware","Policy strength scoring","Violation reporting"],"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"creator":{"@type":"Person","name":"Shakil","url":"https://blog.shakiltech.com"}}</script>
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is a Content Security Policy (CSP)?","acceptedAnswer":{"@type":"Answer","text":"A Content Security Policy is an HTTP response header that tells browsers which sources of scripts, styles, images, and other content are allowed to load on your page. It is your primary defense against cross-site scripting (XSS) attacks — if a malicious script is injected, the browser refuses to run it because it comes from an unapproved source."}},{"@type":"Question","name":"Should I use report-only mode first?","acceptedAnswer":{"@type":"Answer","text":"Yes, always. Use Content-Security-Policy-Report-Only with a report-to endpoint before enforcing. The browser logs violations but blocks nothing. Run it for 1–2 weeks, fix any legitimate sources being blocked, then switch to enforcing mode."}},{"@type":"Question","name":"Can I use CSP with CDNs or third-party scripts?","acceptedAnswer":{"@type":"Answer","text":"Yes, but carefully. Add the CDN domain to the appropriate directive (e.g. script-src cdn.example.com). Avoid unsafe-inline or wildcard * as they defeat the purpose. Use Subresource Integrity (SRI) hashes for extra protection when loading third-party scripts."}},{"@type":"Question","name":"Does CSP break my existing Laravel app?","acceptedAnswer":{"@type":"Answer","text":"It can — if you have inline scripts or styles without nonces. Use Report-Only mode first. The browser reports violations but blocks nothing. Run it for a week, fix your templates, then enforce."}},{"@type":"Question","name":"My Vite HMR stopped working after adding CSP.","acceptedAnswer":{"@type":"Answer","text":"Two things. First, make sure localhost:5173 (or your Vite port) is in connect-src and script-src. Second, enable the Local Dev toggle in this tool — it adds the WebSocket source automatically."}},{"@type":"Question","name":"Do I need CSP if I already have CSRF protection?","acceptedAnswer":{"@type":"Answer","text":"Yes. They protect against different attacks. CSRF prevents forged requests from other origins. CSP prevents injected scripts from running in your page. Both are needed."}},{"@type":"Question","name":"What's the difference between report-uri and Report-To?","acceptedAnswer":{"@type":"Answer","text":"report-uri is the original directive, widely supported. Report-To is the modern replacement using the Reporting API and supports batching. Use both for maximum coverage until Report-To is universally supported."}},{"@type":"Question","name":"How do I handle CSP with Livewire?","acceptedAnswer":{"@type":"Answer","text":"For Livewire v2, enable the Livewire toggle — it adds the alpine.js nonce and wire: event sources. For Livewire v3, nonce support is built-in via the @nonce blade directive."}}]}</script>
+<script type="application/ld+json"><?= faq_jsonld($faq) ?></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" nonce="<?= $n ?>" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
@@ -76,7 +78,7 @@ $n = htmlspecialchars($nonce, ENT_QUOTES);
     <span class="tag">Vite-ready</span>
     <span class="tag">Livewire-aware</span>
     <span class="tag">Violation reporting</span>
-    <span class="tag">100% client-side</span>
+    <span class="tag">Runs in your browser</span>
   </div>
 </section>
 
@@ -126,7 +128,7 @@ $n = htmlspecialchars($nonce, ENT_QUOTES);
         </div>
         <div class="dir-block vite-block is-hidden" id="vite-block">
           <div class="dir-lbl"><label class="dir-name" for="vite-origin">Vite dev server</label><span class="dir-hint">Herd: https://app.test:5173</span></div>
-          <input class="text-inp" id="vite-origin" type="text" inputmode="url" autocomplete="off" spellcheck="false" placeholder="http://localhost:5173" aria-describedby="vite-msg">
+          <input class="text-inp" id="vite-origin" data-clarity-mask="true" type="text" inputmode="url" autocomplete="off" spellcheck="false" placeholder="http://localhost:5173" aria-describedby="vite-msg">
           <p class="field-msg" id="vite-msg" aria-live="polite"></p>
         </div>
         <div class="trow">
@@ -170,7 +172,7 @@ $n = htmlspecialchars($nonce, ENT_QUOTES);
         </div>
         <div class="dir-block">
           <div class="dir-lbl"><span class="dir-name">script-src custom</span><span class="dir-hint">Enter to add</span></div>
-          <div class="tag-wrap">
+          <div class="tag-wrap" data-clarity-mask="true">
             <div id="tags-script" class="tags-list"></div>
             <input class="tag-inp" placeholder="https://cdn.example.com" data-dir="script" aria-label="Add a script-src host" aria-describedby="msg-script" />
           </div>
@@ -202,7 +204,7 @@ $n = htmlspecialchars($nonce, ENT_QUOTES);
         </div>
         <div class="dir-block">
           <div class="dir-lbl"><span class="dir-name">style-src custom</span><span class="dir-hint">Enter to add</span></div>
-          <div class="tag-wrap">
+          <div class="tag-wrap" data-clarity-mask="true">
             <div id="tags-style" class="tags-list"></div>
             <input class="tag-inp" placeholder="https://cdn.example.com" data-dir="style" aria-label="Add a style-src host" aria-describedby="msg-style" />
           </div>
@@ -220,7 +222,7 @@ $n = htmlspecialchars($nonce, ENT_QUOTES);
       <div class="cfg-body">
         <div class="dir-block dir-block--first">
           <div class="dir-lbl"><span class="dir-name">img-src</span><span class="dir-hint">Enter to add</span></div>
-          <div class="tag-wrap">
+          <div class="tag-wrap" data-clarity-mask="true">
             <div id="tags-img" class="tags-list"></div>
             <input class="tag-inp" placeholder="https://your-cdn.com" data-dir="img" aria-label="Add a img-src host" aria-describedby="msg-img" />
           </div>
@@ -228,7 +230,7 @@ $n = htmlspecialchars($nonce, ENT_QUOTES);
         </div>
         <div class="dir-block">
           <div class="dir-lbl"><span class="dir-name">frame-src</span><span class="dir-hint">Enter to add</span></div>
-          <div class="tag-wrap">
+          <div class="tag-wrap" data-clarity-mask="true">
             <div id="tags-frame" class="tags-list"></div>
             <input class="tag-inp" placeholder="https://video.example.com" data-dir="frame" aria-label="Add a frame-src host" aria-describedby="msg-frame" />
           </div>
@@ -247,7 +249,7 @@ $n = htmlspecialchars($nonce, ENT_QUOTES);
         <p class="cfg-note cfg-note--top">Controls <code class="code-plain">fetch()</code>, XHR, WebSockets and SSE. Vite HMR WebSocket is added automatically when local dev is on.</p>
         <div class="dir-block">
           <div class="dir-lbl"><span class="dir-name">connect-src custom</span><span class="dir-hint">Enter to add</span></div>
-          <div class="tag-wrap">
+          <div class="tag-wrap" data-clarity-mask="true">
             <div id="tags-connect" class="tags-list"></div>
             <input class="tag-inp" placeholder="https://api.example.com" data-dir="connect" aria-label="Add a connect-src host" aria-describedby="msg-connect" />
           </div>
@@ -289,7 +291,7 @@ $n = htmlspecialchars($nonce, ENT_QUOTES);
   </div><!-- /config -->
 
   <!-- OUTPUT -->
-  <div class="output">
+  <div class="output" data-clarity-mask="true">
     <div class="out-tabs">
       <button type="button" class="otab active" data-tab="header">HTTP Header</button>
       <button type="button" class="otab" data-tab="php">PHP Middleware</button>
@@ -336,7 +338,7 @@ $n = htmlspecialchars($nonce, ENT_QUOTES);
           </div>
           <input class="form-pot" id="g-pot" name="website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true" />
           <button type="button" class="form-submit" data-action="submit-guide">Send me the PDF →</button>
-          <p class="form-privacy">No spam. Unsubscribe any time. PDF delivered immediately.</p>
+          <p class="form-privacy">We store your email to send the guide and occasional CSP updates. Unsubscribe any time.</p>
         </div>
       </div>
       <div class="guide-success is-hidden" id="guide-success">
@@ -364,8 +366,8 @@ $n = htmlspecialchars($nonce, ENT_QUOTES);
     </div>
     <div class="feat-card">
       <div class="feat-icon">🚨</div>
-      <div class="feat-title">Violation reporting included</div>
-      <div class="feat-body">The PHP output includes a complete reporting pipeline — route, controller, log channels, extension filtering, and threshold alerting.</div>
+      <div class="feat-title">Violation reporting ready</div>
+      <div class="feat-body">Adds report-uri and report-to so browsers send blocked-resource reports to your endpoint.</div>
     </div>
     <div class="feat-card">
       <div class="feat-icon">⚡</div>
@@ -396,14 +398,9 @@ $n = htmlspecialchars($nonce, ENT_QUOTES);
     <div class="section-label">Common questions</div>
     <div class="section-title">FAQ</div>
   </div>
-  <div class="faq-item"><button type="button" class="faq-q">What is a Content Security Policy (CSP)? <span class="faq-ch">▾</span></button><div class="faq-a">A CSP is an HTTP response header that tells browsers which sources of scripts, styles, images, and other resources are allowed to load on your page. It's your primary defense against <strong>cross-site scripting (XSS)</strong> — if malicious code is injected into your HTML, the browser refuses to execute it because it doesn't come from an approved source.</div></div>
-  <div class="faq-item"><button type="button" class="faq-q">Should I use report-only mode before enforcing? <span class="faq-ch">▾</span></button><div class="faq-a">Yes — always. Set <code>Content-Security-Policy-Report-Only</code> with a <code>report-to</code> endpoint first. Browsers log violations but block nothing. Run it in production for 1–2 weeks, review the reports, fix any legitimate sources, then switch to enforcement mode.</div></div>
-  <div class="faq-item"><button type="button" class="faq-q">Can I use CSP with CDNs or third-party scripts? <span class="faq-ch">▾</span></button><div class="faq-a">Yes, but carefully. Add the CDN hostname to the correct directive — e.g. <code>script-src cdn.example.com</code>. Avoid <code>'unsafe-inline'</code> or <code>*</code> wildcards — they defeat the purpose. For extra protection, add <strong>Subresource Integrity (SRI)</strong> hashes to your <code>&lt;script&gt;</code> and <code>&lt;link&gt;</code> tags.</div></div>
-  <div class="faq-item"><button type="button" class="faq-q">Does CSP break my existing Laravel app? <span class="faq-ch">▾</span></button><div class="faq-a">It can — if you have inline scripts or styles without nonces. Use <code>Report-Only</code> mode first. The browser reports violations but blocks nothing. Run it for a week, fix your templates, then enforce.</div></div>
-  <div class="faq-item"><button type="button" class="faq-q">My Vite HMR stopped working after adding CSP. <span class="faq-ch">▾</span></button><div class="faq-a">Two things. First, make sure <code>Vite::useCspNonce($nonce)</code> is called before <code>$next($request)</code>. Second, make sure <code>connect-src</code> includes <code>ws://localhost:5173</code> in your local environment. Enable Local Dev mode above — it handles both.</div></div>
-  <div class="faq-item"><button type="button" class="faq-q">Do I need CSP if I already have CSRF protection? <span class="faq-ch">▾</span></button><div class="faq-a">Yes. They protect against different attacks. CSRF prevents forged requests from other domains. CSP prevents injected scripts from running on your domain. One doesn't substitute for the other.</div></div>
-  <div class="faq-item"><button type="button" class="faq-q">What's the difference between report-uri and Report-To? <span class="faq-ch">▾</span></button><div class="faq-a"><code>report-uri</code> is the original, widely supported mechanism. <code>Report-To</code> is the newer Reporting API — reports are batched and the endpoint is cached. Use both for maximum coverage, or use <a href="https://report-uri.com" target="_blank">report-uri.com</a> as a hosted alternative.</div></div>
-  <div class="faq-item"><button type="button" class="faq-q">How do I handle CSP with Livewire? <span class="faq-ch">▾</span></button><div class="faq-a">For Livewire v2: <code>@livewireScripts(['nonce' => $cspNonce])</code>. For Livewire v3: <code>@livewireScriptConfig(['nonce' => $cspNonce])</code>. Enable the Livewire integration above and the checklist will remind you.</div></div>
+<?php foreach ($faq as $item): ?>
+  <div class="faq-item"><button type="button" class="faq-q"><?= htmlspecialchars($item['q']) ?> <span class="faq-ch">▾</span></button><div class="faq-a"><?= $item['a_html'] ?></div></div>
+<?php endforeach; ?>
 </section>
 
 <footer>
@@ -413,6 +410,7 @@ $n = htmlspecialchars($nonce, ENT_QUOTES);
     <a href="https://securityheaders.com" target="_blank">Test your headers</a> &nbsp;·&nbsp;
     <a href="https://csp-evaluator.withgoogle.com" target="_blank">CSP Evaluator</a>
   </p>
+  <p class="footer-privacy">The generator runs in your browser. Nothing you configure is sent anywhere. Anonymous usage stats via Google Analytics and Microsoft Clarity.</p>
 </footer>
 
 </body>

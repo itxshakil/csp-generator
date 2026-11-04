@@ -2,9 +2,10 @@
 
 **A free, visual Content Security Policy builder for Laravel apps.**
 
-Configure your directives with toggles, get the full policy string, a ready-to-paste PHP middleware method, and a pre-enforcement checklist — all in your browser, nothing sent anywhere.
+Configure your directives with toggles, get the full policy string, a ready-to-paste PHP middleware method, and a pre-enforcement checklist.
+The generator runs in your browser and nothing you configure is sent anywhere.
 
-**[→ Open the tool](https://csp-generator.shakiltech.com)** · [Blog post](https://blog.shakiltech.com/how-we-implemented-content-security-policy-csp-laravel) · [Report a bug](https://github.com/shakil/laravel-csp-generator/issues)
+**[→ Open the tool](https://csp-generator.shakiltech.com)** · [Blog post](https://blog.shakiltech.com/how-we-implemented-content-security-policy-csp-laravel) · [Report a bug](https://github.com/itxshakil/csp-generator/issues)
 
 ---
 
@@ -52,13 +53,14 @@ This tool handles all of it so you don't debug it from scratch.
 - **Nonce-based by default** — never `unsafe-inline`
 - **Vite-aware** — generates `Vite::useCspNonce()` in the correct position
 - **Livewire support** — nonce reminders for `@livewireScripts` and `@livewireScriptConfig`
-- **Environment-aware** — Vite HMR WebSocket only in local, `upgrade-insecure-requests` skipped in local dev
+- **Environment-aware** - in local mode the Vite dev server is allowed in `script-src` and `style-src` and its HMR WebSocket in `connect-src`, and `upgrade-insecure-requests` is skipped
 - **Custom domains** — tag inputs for `script-src`, `style-src`, `img-src`, `frame-src`, `connect-src`
-- **Violation reporting** — `report-uri` in the policy, `Report-To` header for modern browsers
+- **Violation reporting** - `report-uri` in the policy
 - **Report-only mode** — swap header name for safe testing before enforcing
 - **Policy strength score** — real-time A+ to D grade based on nonce usage, HTTPS, allowlist size
 - **Copy + Download** — copy any output block or download the PHP file directly
-- **100% client-side** — no data sent anywhere, no signup, no backend
+- **Runs in your browser** - nothing you configure is sent anywhere, no signup.
+  The site uses Google Analytics and Microsoft Clarity for anonymous usage stats.
 
 ---
 
@@ -143,6 +145,21 @@ Before enforcing, use `Content-Security-Policy-Report-Only`. The generator has a
 | Hosted violation reporting | [report-uri.com](https://report-uri.com) |
 | Spatie laravel-csp package | [github.com/spatie/laravel-csp](https://github.com/spatie/laravel-csp) |
 | MDN CSP Reference | [developer.mozilla.org](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy) |
+
+---
+
+## Development
+
+There is no build step.
+`index.php` holds the markup, `assets/app.css` the styles, and `assets/js/` native ES modules.
+Run the linters and tests before every commit:
+
+```bash
+./scripts/check.sh
+```
+
+It runs `php -l`, `node --check`, `node --test 'tests/js/*.test.js'` and `php tests/php/run.php`.
+No npm or composer install is needed.
 
 ---
 

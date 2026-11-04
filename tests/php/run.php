@@ -19,6 +19,17 @@ function assert_same(mixed $expected, mixed $actual, string $message = ''): void
     }
 }
 
+function render_index(): array
+{
+    ob_start();
+    $cspNonce = null;
+    (function () use (&$cspNonce) {
+        include __DIR__ . '/../../index.php';
+        $cspNonce = $nonce ?? null;
+    })();
+    return [ob_get_clean(), $cspNonce];
+}
+
 $failed = 0;
 $files  = glob(__DIR__ . '/*Test.php') ?: [];
 
