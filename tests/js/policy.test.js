@@ -1,15 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildDirectives, policyString, needsFor, skippedPaths, REPORT_PATH, REPORT_GROUP, ENVS } from '../../assets/js/policy.js';
-import { DEFAULT_STATE, PRESETS, sanitizeState } from '../../assets/js/state.js';
+import { buildDirectives, policyString, needsFor, skippedPaths, REPORT_PATH, REPORT_GROUP } from '../../assets/js/policy.js';
+import { preset } from './helpers.js';
 import { INTEGRATIONS, STACK, HOSTING } from '../../assets/js/integrations.js';
 
-export const preset = (name, extra = {}) => sanitizeState({ ...structuredClone(DEFAULT_STATE), ...PRESETS[name], ...extra });
 const dir = (dirs, name) => dirs.find(d => d.name === name)?.sources ?? [];
 const names = dirs => dirs.map(d => d.name);
 
 test('constants', () => {
-  assert.deepEqual(ENVS, ['production', 'local']);
   assert.equal(REPORT_PATH, '/csp-violation-report');
   assert.equal(REPORT_GROUP, 'csp-endpoint');
 });

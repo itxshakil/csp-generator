@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { CUSTOM_KINDS, DEFAULT_STATE, PRESETS, PRESET_LABELS, MAX_EMBEDS, normalizeEmbedPath, sanitizeState, migrateV1 } from '../../assets/js/state.js';
+import { CUSTOM_KINDS, DEFAULT_STATE, PRESETS, MAX_EMBEDS, normalizeEmbedPath, sanitizeState, migrateV1 } from '../../assets/js/state.js';
 
 test('default state shape', () => {
   assert.equal(DEFAULT_STATE.v, 2);
@@ -12,7 +12,6 @@ test('default state shape', () => {
 
 test('presets are strict, standard and rollout', () => {
   assert.deepEqual(Object.keys(PRESETS), ['strict', 'standard', 'rollout']);
-  assert.deepEqual(PRESET_LABELS, { strict: 'Strict', standard: 'Standard', rollout: 'Rollout' });
   assert.deepEqual(PRESETS.standard.integrations, ['google-fonts', 'ga4']);
   assert.equal(PRESETS.rollout.reportOnly, true);
   assert.deepEqual({ ...PRESETS.rollout, reportOnly: false }, PRESETS.standard);

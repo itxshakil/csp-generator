@@ -1,10 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { encodeShare, decodeHash, sanitizeResources, bookmarkletSource, encodePayload } from '../../assets/js/share.js';
-import { DEFAULT_STATE, PRESETS, CUSTOM_KINDS, sanitizeState } from '../../assets/js/state.js';
+import { CUSTOM_KINDS } from '../../assets/js/state.js';
+import { preset } from './helpers.js';
 import { INTEGRATIONS, STACK, HOSTING } from '../../assets/js/integrations.js';
 
-const preset = (name, extra = {}) => sanitizeState({ ...structuredClone(DEFAULT_STATE), ...PRESETS[name], ...extra });
 const KITCHEN = preset('rollout', {
   integrations: INTEGRATIONS.map(i => i.id), stack: STACK.map(s => s.id), hosting: HOSTING.map(h => h.id),
   custom: Object.fromEntries(CUSTOM_KINDS.map(k => [k, [`https://${k}.example.com`]])),
