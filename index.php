@@ -174,12 +174,25 @@ $faq = faq_items();
 
   <!-- OUTPUT -->
   <div class="output" data-clarity-mask="true">
-    <div class="out-tabs" role="tablist" aria-label="Output">
-      <button type="button" class="otab active" role="tab" id="tab-header" data-tab="header" aria-selected="true" aria-controls="out-body" tabindex="0">Header</button>
-      <button type="button" class="otab" role="tab" id="tab-laravel" data-tab="laravel" aria-selected="false" aria-controls="out-body" tabindex="-1">Laravel</button>
-      <button type="button" class="otab" role="tab" id="tab-formats" data-tab="formats" aria-selected="false" aria-controls="out-body" tabindex="-1">Other formats</button>
-      <button type="button" class="otab" role="tab" id="tab-checklist" data-tab="checklist" aria-selected="false" aria-controls="out-body" tabindex="-1">Checklist</button>
-      <button type="button" class="otab" role="tab" id="tab-summary" data-tab="summary" aria-selected="false" aria-controls="out-body" tabindex="-1">Summary</button>
+    <div class="out-head">
+      <div class="out-tabs" role="tablist" aria-label="Output">
+        <button type="button" class="otab active" role="tab" id="tab-header" data-tab="header" aria-selected="true" aria-controls="out-body" tabindex="0">Header</button>
+        <button type="button" class="otab" role="tab" id="tab-laravel" data-tab="laravel" aria-selected="false" aria-controls="out-body" tabindex="-1">Laravel</button>
+        <button type="button" class="otab" role="tab" id="tab-formats" data-tab="formats" aria-selected="false" aria-controls="out-body" tabindex="-1">Other formats</button>
+        <button type="button" class="otab" role="tab" id="tab-checklist" data-tab="checklist" aria-selected="false" aria-controls="out-body" tabindex="-1">Checklist</button>
+        <button type="button" class="otab" role="tab" id="tab-summary" data-tab="summary" aria-selected="false" aria-controls="out-body" tabindex="-1">Summary</button>
+      </div>
+      <button type="button" class="kbd-btn" popovertarget="kbd-help" aria-label="Keyboard shortcuts" title="Keyboard shortcuts (?)"><?= icon('keyboard') ?></button>
+    </div>
+    <div class="kbd-help" id="kbd-help" popover>
+      <p class="kbd-title">Keyboard shortcuts</p>
+      <dl>
+        <dt><kbd>1</kbd> to <kbd>5</kbd></dt><dd>Switch output tab</dd>
+        <dt><kbd>c</kbd></dt><dd>Copy the output</dd>
+        <dt><kbd>/</kbd></dt><dd>Search integrations</dd>
+        <dt><kbd>?</kbd></dt><dd>Show this list</dd>
+        <dt><kbd>Esc</kbd></dt><dd>Close it</dd>
+      </dl>
     </div>
     <div class="out-body" id="out-body" role="tabpanel" aria-labelledby="tab-header" tabindex="0"></div>
     <div class="src-tip" id="src-tip" popover="manual" role="tooltip"></div>

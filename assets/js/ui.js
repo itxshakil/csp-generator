@@ -5,6 +5,7 @@ import { initConfig } from './ui-config.js';
 import { initOutput } from './ui-output.js';
 import { initTools } from './ui-tools.js';
 import { initSignup } from './ui-signup.js';
+import { shortcutFor } from './shortcuts.js';
 
 const STORAGE_KEY = 'csp-state';
 
@@ -59,15 +60,38 @@ function restore(store) {
   return true;
 }
 
+function focusSearch() {
+  const head = document.querySelector('#sec-integrations .cfg-section-head');
+  if (head.getAttribute('aria-expanded') === 'false') head.click();
+  const search = document.querySelector('#int-search');
+  search.focus({ preventScroll: true });
+  search.scrollIntoView({ block: 'center' });
+}
+
+function wireShortcuts(output) {
+  const help = document.querySelector('#kbd-help');
+  document.addEventListener('keydown', e => {
+    const action = shortcutFor(e, Boolean(document.querySelector('dialog[open]')));
+    if (!action) return;
+    e.preventDefault();
+    if (action.type === 'tab') output.setTab(action.tab);
+    else if (action.type === 'copy') output.copyActive();
+    else if (action.type === 'search') focusSearch();
+    else if (action.type === 'help') help.togglePopover();
+    track('shortcut', { action: action.type });
+  });
+}
+
 const store = createStore();
 const restored = restore(store);
 initConfig(store);
-initOutput(store);
+const output = initOutput(store);
 initSignup();
 // Restored settings are saved straight back, which rewrites old (v1) or tampered values in the clean v2 shape.
 if (restored) store.update(() => {});
 else store.applyPreset('strict');
 initTools(store);
+wireShortcuts(output);
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {

@@ -318,4 +318,13 @@ export function initOutput(store) {
     }
     render();
   });
+
+  return {
+    setTab: next => setTab(next, true),
+    // Copies the first block of the visible tab, the one a person most likely wants.
+    copyActive: () => {
+      const btn = $('[data-copy]', body);
+      if (btn) copy(btn.dataset.copy, btn);
+    },
+  };
 }
