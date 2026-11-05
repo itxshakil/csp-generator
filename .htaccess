@@ -7,9 +7,13 @@ Options -Indexes
     RewriteEngine On
     RewriteBase /
 
-    # Block direct access to internal PHP helpers
+    # Internal folders are never served
+    RewriteRule ^(lib|tests|scripts|docs|data)(/|$) - [F,L]
+
+    # PHP endpoints served as-is
     RewriteRule ^icon\.php$       - [L]
     RewriteRule ^save-email\.php$ - [L]
+    RewriteRule ^csp-report\.php$ - [L]
 
     # Let static assets pass through
     RewriteCond %{REQUEST_FILENAME} !-f
