@@ -6,6 +6,8 @@ import { escapeHtml, highlightDirectives } from './highlight.js';
 import { initTooltips } from './tooltip.js';
 import { withTransition } from './motion.js';
 import { sourceDiff, removedNote } from './diff.js';
+import { copyWithFeedback } from './announce.js';
+import { iconSvg } from './icons.js';
 import { track, clarityTag } from './analytics.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -44,6 +46,10 @@ function saveChecked(checked) {
 }
 
 // ── Building blocks ─────────────────────────────────────────────────────────
+function copyButton(id, what) {
+  return `<button type="button" class="cbtn cbtn-copy" data-copy="${id}" data-copy-what="${escapeHtml(what)}"><span class="cbtn-icon">${iconSvg('copy')}</span><span class="cbtn-label">Copy</span></button>`;
+}
+
 function codeBlock(id, title, text, download) {
   texts.set(id, text);
   const dl = download ? `<button type="button" class="cbtn" data-download="${id}" data-filename="${escapeHtml(download)}">Download</button>` : '';
@@ -51,7 +57,7 @@ function codeBlock(id, title, text, download) {
     <div class="code-block">
       <div class="code-hdr">
         <span class="code-title">${escapeHtml(title)}</span>
-        <div class="code-actions"><button type="button" class="cbtn" data-copy="${id}">Copy</button>${dl}</div>
+        <div class="code-actions">${copyButton(id, title)}${dl}</div>
       </div>
       <pre id="pre-${id}">${escapeHtml(text)}</pre>
     </div>`;
@@ -123,7 +129,7 @@ function renderHeader(s) {
     <div class="code-block">
       <div class="code-hdr">
         <span class="code-title">${escapeHtml(name)}</span>
-        <div class="code-actions"><button type="button" class="cbtn" data-copy="hdr">Copy</button></div>
+        <div class="code-actions">${copyButton('hdr', name)}</div>
       </div>
       <pre id="pre-hdr">${highlightDirectives(dirs, diff?.added)}</pre>
     </div>
@@ -132,7 +138,7 @@ function renderHeader(s) {
     <div class="code-block">
       <div class="code-hdr">
         <span class="code-title">Reporting-Endpoints</span>
-        <div class="code-actions"><button type="button" class="cbtn" data-copy="rep">Copy</button></div>
+        <div class="code-actions">${copyButton('rep', 'Reporting-Endpoints')}</div>
       </div>
       <pre id="pre-rep" aria-label="Reporting-Endpoints: ${escapeHtml(reportingLine)}"><span class="sk">Reporting-Endpoints:</span> <span class="sv">${escapeHtml(reportingLine)}</span></pre>
     </div>` : ''}
@@ -202,15 +208,7 @@ const RENDERERS = { header: renderHeader, laravel: renderLaravel, formats: rende
 
 // ── Wiring ──────────────────────────────────────────────────────────────────
 function copy(id, btn) {
-  navigator.clipboard.writeText(texts.get(id)).then(() => {
-    btn.textContent = 'Copied!';
-    btn.classList.add('ok');
-    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('ok'); }, 1800);
-    track('copy_output', { element: id });
-  }, err => {
-    btn.textContent = 'Copy failed';
-    console.error('Clipboard write failed', err);
-  });
+  copyWithFeedback(btn, texts.get(id), btn.dataset.copyWhat).then(ok => { if (ok) track('copy_output', { element: id }); });
 }
 
 function download(id, name) {

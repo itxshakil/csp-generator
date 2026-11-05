@@ -40,4 +40,10 @@ return [
         assert_same($count, substr_count($html, '<summary class="faq-q">'), 'one summary per question');
         assert_true(!str_contains($html, '<button type="button" class="faq-q"'), 'no FAQ buttons');
     },
+    'one polite live region announces results' => function () {
+        [$html] = render_index();
+        assert_same(1, preg_match_all('#<div\b[^>]*id="announcer"[^>]*>#', $html, $m), 'one announcer');
+        assert_true(str_contains($m[0][0], 'aria-live="polite"'), 'polite');
+        assert_true(str_contains($m[0][0], 'class="sr-only"'), 'visually hidden');
+    },
 ];
