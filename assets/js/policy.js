@@ -1,167 +1,142 @@
-// Pure policy logic: no DOM access, so it runs in the browser and under `node --test`.
+// Pure policy logic: state plus environment to directives, each source with the reasons it is there.
+import { INTEGRATIONS, STACK, HOSTING } from './integrations.js';
+import { normalizeOrigin, wsOrigin, collapseSources, covers } from './sources.js';
+import { DEFAULT_STATE } from './state.js';
 
-export const TAG_DIRS = ['script', 'style', 'img', 'frame', 'connect'];
-
-export const TOGGLE_KEYS = ['local', 'reportonly', 'reporting', 'jsdelivr', 'cdnjs', 'tawk', 'gfonts', 'ga', 'gtm', 'livewire', 'inlineStyleAttrs'];
-
-export const DEFAULT_STATE = {
-  local: false, reportonly: false, reporting: true,
-  jsdelivr: true, cdnjs: true, tawk: false,
-  gfonts: true, ga: false, gtm: false, livewire: false,
-  inlineStyleAttrs: false,
-  viteOrigin: 'http://localhost:5173',
-  tags: { script: [], style: [], img: [], frame: [], connect: [] },
-};
-
-export const PRESETS = {
-  strict:   { local: false, reportonly: false, reporting: true, jsdelivr: false, cdnjs: false, tawk: false, gfonts: false, ga: false, gtm: false, livewire: false, inlineStyleAttrs: false },
-  standard: { local: false, reportonly: false, reporting: true, jsdelivr: true,  cdnjs: true,  tawk: false, gfonts: true,  ga: false, gtm: false, livewire: false, inlineStyleAttrs: false },
-  local:    { local: true,  reportonly: true,  reporting: true, jsdelivr: true,  cdnjs: true,  tawk: false, gfonts: true,  ga: false, gtm: false, livewire: false, inlineStyleAttrs: false },
-};
+export const ENVS = ['production', 'local'];
+export const REPORT_PATH = '/csp-violation-report';
+export const REPORT_GROUP = 'csp-endpoint';
 
 const SELF = "'self'";
 const NONCE = "'nonce-{$nonce}'";
-const LOOPBACK = /^(localhost|127\.0\.0\.1)(:|$)/i;
-const HOSTNAME = /^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)*[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/i;
+const UNSAFE_EVAL = "'unsafe-eval'";
+const UNSAFE_INLINE = "'unsafe-inline'";
+const DASHBOARDS = { telescope: 'telescope*', horizon: 'horizon*', pulse: 'pulse*' };
 
-// Turns "app.test:5173", "https://app.test:5173/path" etc. into "https://app.test:5173".
-export function normalizeOrigin(raw) {
-  const input = String(raw ?? '').trim();
-  const fail = error => ({ value: null, error });
-  if (!input) return fail('Enter a host, for example localhost:5173.');
-  if (/[\s'"<>`]/.test(input)) return fail('A host cannot contain spaces, quotes or angle brackets.');
-  const withScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(input) ? input : (LOOPBACK.test(input) ? 'http://' : 'https://') + input;
-  let url;
-  try {
-    url = new URL(withScheme);
-  } catch {
-    return fail('That is not a valid host.');
-  }
-  if (url.protocol !== 'http:' && url.protocol !== 'https:') return fail('Use http:// or https://.');
-  if (!HOSTNAME.test(url.hostname)) return fail('That is not a valid host.');
-  return { value: url.origin, error: null };
-}
-
-const SOURCE_SCHEMES = ['https:', 'wss:', 'http:', 'ws:'];
-export const MAX_TAGS = 50;
-
-// Turns user input into a CSP host source: "cdn.example.com/lib.js" becomes "https://cdn.example.com".
-// Keywords, bare wildcards and anything that could break out of the header are rejected.
-export function normalizeSource(raw) {
-  const input = String(raw ?? '').trim().replace(/,$/, '');
-  const fail = error => ({ value: null, error, warning: null });
-  if (!input) return fail('Enter a host, for example cdn.example.com.');
-  if (/[\s'"<>`;,\\]/.test(input)) return fail("Enter a host or URL. Keywords like 'unsafe-inline' are not allowed here.");
-  const withScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(input) ? input : 'https://' + input;
-  // URL parsers disagree on "*" in hostnames (Chromium percent-encodes it), so the wildcard
-  // label is taken off before parsing and put back afterwards.
-  const wildcard = /^[a-z][a-z0-9+.-]*:\/\/\*\./i.test(withScheme);
-  let url;
-  try {
-    url = new URL(wildcard ? withScheme.replace('://*.', '://') : withScheme);
-  } catch {
-    return fail('That is not a valid host.');
-  }
-  if (!SOURCE_SCHEMES.includes(url.protocol)) return fail('Use https://, wss://, http:// or ws://.');
-  const host = url.hostname;
-  if (!HOSTNAME.test(host) || (!host.includes('.') && host !== 'localhost')) return fail('That is not a valid host.');
-  const value = `${url.protocol}//${wildcard ? '*.' : ''}${host}${url.port ? ':' + url.port : ''}`;
-  const warning = url.protocol === 'http:' || url.protocol === 'ws:'
-    ? 'Insecure source: browsers block it on HTTPS pages as mixed content.'
-    : null;
-  return { value, error: null, warning };
-}
-
-// Rebuilds state from untrusted input (localStorage, share links). Unknown keys and invalid values are dropped.
-export function sanitizeState(raw) {
-  const state = structuredClone(DEFAULT_STATE);
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return state;
-  for (const [key, def] of Object.entries(DEFAULT_STATE)) {
-    if (typeof def === 'boolean' && typeof raw[key] === 'boolean') state[key] = raw[key];
-  }
-  state.viteOrigin = normalizeOrigin(raw.viteOrigin).value ?? DEFAULT_STATE.viteOrigin;
-  const tags = raw.tags && typeof raw.tags === 'object' ? raw.tags : {};
-  for (const dir of TAG_DIRS) {
-    const list = Array.isArray(tags[dir]) ? tags[dir] : [];
-    state.tags[dir] = unique(list.map(v => normalizeSource(v).value).filter(Boolean)).slice(0, MAX_TAGS);
-  }
-  return state;
-}
-
-export function wsOrigin(origin) {
-  return origin.replace(/^http/, 'ws');
-}
-
-// Every source a service needs, by directive. Sources are verified against each vendor's CSP guidance.
-export const SERVICE_SOURCES = {
-  jsdelivr: { script: ['https://cdn.jsdelivr.net'] },
-  cdnjs: {
-    script: ['https://cdnjs.cloudflare.com'], style: ['https://cdnjs.cloudflare.com'],
-    font: ['https://cdnjs.cloudflare.com'], img: ['https://cdnjs.cloudflare.com'],
-  },
-  gfonts: { style: ['https://fonts.googleapis.com'], font: ['https://fonts.gstatic.com'] },
-  tawk: {
-    script: ['https://*.tawk.to'], style: ['https://*.tawk.to'], font: ['https://*.tawk.to'],
-    img: ['https://*.tawk.to', 'https://tawk.link'], media: ['https://*.tawk.to'], frame: ['https://*.tawk.to'],
-    connect: ['https://*.tawk.to', 'wss://*.tawk.to'],
-  },
-  ga: {
-    script: ['https://www.googletagmanager.com'],
-    img: ['https://*.google-analytics.com', 'https://*.analytics.google.com', 'https://*.googletagmanager.com'],
-    connect: ['https://*.google-analytics.com', 'https://*.analytics.google.com', 'https://*.googletagmanager.com'],
-  },
-  gtm: { script: ['https://www.googletagmanager.com'], img: ['https://www.googletagmanager.com'] },
+const BASE_REASONS = {
+  [SELF]: 'Your own origin',
+  [NONCE]: 'Inline scripts and styles you mark with the per-request nonce',
+  'data:': 'Inline data: URLs, for example small icons and embedded fonts',
+  "'none'": 'Nothing is allowed',
 };
 
-const SERVICE_ORDER = ['jsdelivr', 'cdnjs', 'gfonts', 'tawk', 'ga', 'gtm'];
+// Every catalog item (integration, stack, hosting) the state selects, filtered for the environment.
+function selectedItems(state, env) {
+  const pick = (catalog, ids) => catalog.filter(item => ids.includes(item.id));
+  return [...pick(INTEGRATIONS, state.integrations), ...pick(STACK, state.stack), ...pick(HOSTING, state.hosting)]
+    .filter(item => env === 'local' || !item.localOnly);
+}
 
-const unique = list => [...new Set(list)];
+export function needsFor(state, env = 'production') {
+  const needs = { unsafeEval: [], inlineStyleAttrs: [], workerBlob: [] };
+  const alpineCsp = state.stack.includes('alpineCsp');
+  for (const item of selectedItems(state, env)) {
+    for (const [key, reason] of Object.entries(item.needs ?? {})) {
+      if (key === 'unsafeEval' && item.id === 'alpine' && alpineCsp) continue;
+      needs[key].push(`${item.name}: ${reason}`);
+    }
+  }
+  return needs;
+}
 
-export function buildDirectives(state) {
-  const vite = state.local ? [normalizeOrigin(state.viteOrigin).value ?? DEFAULT_STATE.viteOrigin] : [];
-  const fromServices = kind => SERVICE_ORDER.filter(k => state[k]).flatMap(k => SERVICE_SOURCES[k][kind] ?? []);
+export function skippedPaths(state) {
+  return Object.entries(DASHBOARDS).filter(([id]) => state.stack.includes(id)).map(([, path]) => path);
+}
 
-  const script = unique([SELF, NONCE, ...vite, ...fromServices('script'), ...state.tags.script]);
-  const style = unique([SELF, NONCE, ...vite, ...fromServices('style'), ...state.tags.style]);
-  const font = unique([SELF, 'data:', ...fromServices('font')]);
-  const img = unique([SELF, 'data:', ...fromServices('img'), ...state.tags.img]);
-  const media = unique([SELF, ...fromServices('media')]);
-  const frame = unique([SELF, ...fromServices('frame'), ...state.tags.frame]);
-  const connect = unique([SELF, ...vite.flatMap(origin => [wsOrigin(origin), origin]), ...fromServices('connect'), ...state.tags.connect]);
+// Collects sources and reasons for one directive, then collapses wildcards and merges absorbed reasons.
+class SourceList {
+  constructor() { this.reasons = new Map(); }
+  add(source, reason) {
+    if (!this.reasons.has(source)) this.reasons.set(source, []);
+    const list = this.reasons.get(source);
+    if (!list.includes(reason)) list.push(reason);
+    return this;
+  }
+  build(name) {
+    const sources = collapseSources([...this.reasons.keys()]);
+    const reasons = {};
+    for (const s of sources) {
+      reasons[s] = [...this.reasons.get(s)];
+      for (const [other, otherReasons] of this.reasons) {
+        if (other !== s && covers(s, other)) otherReasons.forEach(r => reasons[s].includes(r) || reasons[s].push(r));
+      }
+    }
+    return { name, sources, reasons };
+  }
+}
 
-  const directives = [
-    { name: 'default-src', sources: [SELF] },
-    { name: 'script-src', sources: script },
-    { name: 'style-src', sources: style },
-    { name: 'style-src-elem', sources: style },
-    { name: 'style-src-attr', sources: [state.inlineStyleAttrs ? "'unsafe-inline'" : "'none'"] },
-    { name: 'font-src', sources: font },
-    { name: 'img-src', sources: img },
-    ...(media.length > 1 ? [{ name: 'media-src', sources: media }] : []),
-    { name: 'frame-src', sources: frame },
-    { name: 'connect-src', sources: connect },
-    { name: 'object-src', sources: ["'none'"] },
-    { name: 'base-uri', sources: [SELF] },
-    { name: 'frame-ancestors', sources: ["'none'"] },
+const withBase = (...base) => base.reduce((list, s) => list.add(s, BASE_REASONS[s]), new SourceList());
+
+export function buildDirectives(state, env = 'production') {
+  const local = env === 'local';
+  const items = selectedItems(state, env);
+  const needs = needsFor(state, env);
+
+  const lists = {
+    script: withBase(SELF, NONCE), style: withBase(SELF, NONCE), font: withBase(SELF, 'data:'), img: withBase(SELF, 'data:'),
+    media: withBase(SELF), frame: withBase(SELF), connect: withBase(SELF), worker: withBase(SELF), form: withBase(SELF),
+  };
+
+  for (const item of items) {
+    for (const [kind, sources] of Object.entries(item.sources ?? {})) {
+      for (const [source, reason] of sources) lists[kind].add(source, `${item.name}: ${reason}`);
+    }
+  }
+
+  if (local && state.stack.includes('vite')) {
+    const vite = normalizeOrigin(state.viteOrigin).value ?? DEFAULT_STATE.viteOrigin;
+    lists.script.add(vite, 'Vite dev server: scripts');
+    lists.style.add(vite, 'Vite dev server: styles');
+    lists.connect.add(wsOrigin(vite), 'Vite dev server: HMR WebSocket');
+    lists.connect.add(vite, 'Vite dev server: HMR requests');
+  }
+
+  for (const [kind, sources] of Object.entries(state.custom)) {
+    for (const source of sources) lists[kind].add(source, 'Added by you');
+  }
+
+  needs.unsafeEval.forEach(reason => lists.script.add(UNSAFE_EVAL, reason));
+  needs.workerBlob.forEach(reason => lists.worker.add('blob:', reason));
+
+  const attrReasons = [...(state.inlineStyleAttrs ? ['You allowed inline style attributes'] : []), ...needs.inlineStyleAttrs];
+  const styleAttr = attrReasons.length
+    ? attrReasons.reduce((list, r) => list.add(UNSAFE_INLINE, r), new SourceList())
+    : new SourceList().add("'none'", 'Blocks inline style="" attributes, which cannot carry a nonce');
+
+  const script = lists.script.build('script-src');
+  const style = lists.style.build('style-src');
+  const media = lists.media.build('media-src');
+  const worker = lists.worker.build('worker-src');
+  const single = (name, source, reason) => ({ name, sources: [source], reasons: { [source]: [reason] } });
+  const flag = name => ({ name, sources: [], reasons: {} });
+
+  return [
+    single('default-src', SELF, 'Fallback for every resource type not listed below'),
+    script,
+    style,
+    // style-src-elem is only worth its bytes when it would differ from style-src; today it never does.
+    styleAttr.build('style-src-attr'),
+    lists.font.build('font-src'),
+    lists.img.build('img-src'),
+    ...(media.sources.length > 1 ? [media] : []),
+    lists.frame.build('frame-src'),
+    lists.connect.build('connect-src'),
+    ...(worker.sources.length > 1 ? [worker] : []),
+    single('manifest-src', SELF, 'Your web app manifest'),
+    lists.form.build('form-action'),
+    single('object-src', "'none'", 'Blocks plugins such as Flash and Java'),
+    single('base-uri', SELF, 'Stops injected <base> tags from redirecting relative URLs'),
+    single('frame-ancestors', "'none'", 'Stops other sites from framing your pages (clickjacking)'),
+    ...(local ? [] : [flag('upgrade-insecure-requests')]),
+    ...(state.reporting ? [
+      single('report-uri', REPORT_PATH, 'Where browsers send violation reports'),
+      single('report-to', REPORT_GROUP, 'Reporting API group declared in the Reporting-Endpoints header'),
+    ] : []),
   ];
-  if (!state.local) directives.push({ name: 'upgrade-insecure-requests', sources: [] });
-  if (state.reporting) directives.push({ name: 'report-uri', sources: ['/api/csp-violation-report'] });
-  return directives;
 }
 
 export function policyString(directives) {
   return directives.map(d => (d.sources.length ? `${d.name} ${d.sources.join(' ')}` : d.name)).join('; ');
-}
-
-export function score(state) {
-  let s = 30;
-  if (!state.local) s += 15;
-  if (state.reporting) s += 20;
-  if (!state.gtm && !state.tawk && state.tags.script.length === 0) s += 15;
-  if (!state.gtm) s += 10;
-  if (!state.local) s += 10;
-  if (state.inlineStyleAttrs) s -= 10;
-  return Math.min(s, 100);
 }
 
 export function grade(n) {
@@ -170,4 +145,62 @@ export function grade(n) {
   if (n >= 60) return { label: 'B', cls: 'grade-b' };
   if (n >= 40) return { label: 'C', cls: 'grade-c' };
   return { label: 'D', cls: 'grade-d' };
+}
+
+export function headerName(state) {
+  return state.reportOnly ? 'Content-Security-Policy-Report-Only' : 'Content-Security-Policy';
+}
+
+const encoder = new TextEncoder();
+
+export function headerBytes(state, env = 'production') {
+  // A real nonce is 24 base64 characters, not the 8-character template placeholder.
+  return encoder.encode(`${headerName(state)}: ${policyString(buildDirectives(state, env)).replaceAll('{$nonce}', 'x'.repeat(24))}`).length;
+}
+
+// 4 KB is the default proxy buffer in nginx-proxy-manager; 8 KB is a common hard limit for a single header line.
+export const SIZE_WARN = 4096;
+export const SIZE_OVER = 8192;
+
+export function sizeLevel(bytes) {
+  if (bytes > SIZE_OVER) return 'over';
+  if (bytes > SIZE_WARN) return 'warn';
+  return 'ok';
+}
+
+// Hosts that serve arbitrary user-controlled or legacy JavaScript, so allowing them lets an attacker load a script gadget.
+const BYPASS_HOSTS = ['https://cdn.jsdelivr.net', 'https://cdnjs.cloudflare.com', 'https://unpkg.com', 'https://*.googleapis.com'];
+
+// Grades the production policy only. Every point lost is listed with the reason.
+export function scorePolicy(state) {
+  const dirs = buildDirectives(state, 'production');
+  const script = dirs.find(d => d.name === 'script-src');
+  const deductions = [];
+  const deduct = (id, label, points) => deductions.push({ id, label, points });
+
+  if (script.sources.includes(UNSAFE_EVAL)) {
+    const who = script.reasons[UNSAFE_EVAL].map(r => r.split(':')[0]).join(', ');
+    deduct('unsafe-eval', `'unsafe-eval' in script-src, needed by ${who}`, 25);
+  }
+  if (dirs.find(d => d.name === 'style-src-attr').sources.includes(UNSAFE_INLINE)) {
+    deduct('style-attr', "'unsafe-inline' in style-src-attr allows injected style attributes", 10);
+  }
+  let bypass = 0;
+  for (const host of script.sources.filter(s => BYPASS_HOSTS.includes(s))) {
+    const points = Math.min(10, 30 - bypass);
+    if (points <= 0) break;
+    bypass += points;
+    deduct('bypass-host', `${host} in script-src serves code an attacker can reuse to bypass the policy`, points);
+  }
+  let wild = 0;
+  for (const host of script.sources.filter(s => s.includes('://*.') && !BYPASS_HOSTS.includes(s))) {
+    const points = Math.min(5, 15 - wild);
+    if (points <= 0) break;
+    wild += points;
+    deduct('wildcard', `${host} in script-src allows every subdomain`, points);
+  }
+  if (state.reportOnly) deduct('report-only', 'Report-only mode: nothing is blocked yet', 20);
+  if (!state.reporting) deduct('no-reporting', 'Reporting is off, so you will not see what breaks', 15);
+
+  return { score: Math.max(0, 100 - deductions.reduce((sum, d) => sum + d.points, 0)), deductions };
 }
