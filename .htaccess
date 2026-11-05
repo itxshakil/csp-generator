@@ -14,6 +14,7 @@ Options -Indexes
     RewriteRule ^icon\.php$       - [L]
     RewriteRule ^save-email\.php$ - [L]
     RewriteRule ^csp-report\.php$ - [L]
+    RewriteRule ^scan\.php$       - [L]
 
     # Let static assets pass through
     RewriteCond %{REQUEST_FILENAME} !-f

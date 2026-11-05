@@ -47,7 +47,7 @@ $faq = faq_items();
 <!-- theme-color: dual light/dark -->
 <meta name="theme-color" content="#F8F7F4" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#18151F"  media="(prefers-color-scheme: dark)">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Laravel CSP Generator","url":"https://csp-generator.shakiltech.com","description":"Free tool to generate production-ready Content Security Policy for Laravel","applicationCategory":"DeveloperApplication","operatingSystem":"Any","featureList":["Nonce-based CSP","27 third-party integrations","Production and local policies from one config","Explained policy score","Header size meter","Laravel middleware, spatie preset, nginx, Apache and meta tag output","Violation reporting"],"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"creator":{"@type":"Person","name":"Shakil","url":"https://blog.shakiltech.com"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Laravel CSP Generator","url":"https://csp-generator.shakiltech.com","description":"Free tool to generate production-ready Content Security Policy for Laravel","applicationCategory":"DeveloperApplication","operatingSystem":"Any","featureList":["Nonce-based CSP","27 third-party integrations","Production and local policies from one config","Explained policy score","Header size meter","Laravel middleware, spatie preset, nginx, Apache and meta tag output","Violation reporting","Import an existing header","Violation explainer","Blade inline code scanner","Live header check"],"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"creator":{"@type":"Person","name":"Shakil","url":"https://blog.shakiltech.com"}}</script>
 <script type="application/ld+json"><?= faq_jsonld($faq) ?></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -95,7 +95,10 @@ $faq = faq_items();
         <button type="button" role="radio" aria-checked="false" data-preset="standard" title="Vite, Google Fonts and GA4.">Standard</button>
         <button type="button" role="radio" aria-checked="false" data-preset="rollout" title="Standard in report-only mode, to watch before enforcing.">Rollout</button>
       </div>
-      <button type="button" class="config-reset" data-action="reset">↺ Reset</button>
+      <div class="config-actions">
+        <button type="button" class="config-reset" data-action="tools" aria-haspopup="dialog">Tools</button>
+        <button type="button" class="config-reset" data-action="reset">↺ Reset</button>
+      </div>
     </div>
 
     <section class="cfg-section open" id="sec-integrations">
@@ -277,6 +280,21 @@ $faq = faq_items();
       <div class="feat-title">A checklist that follows your stack</div>
       <div class="feat-body">Livewire, Inertia, Filament, Cloudflare and full-page caching each add the steps they need. Tick them off as you go, and export a summary for your auditor.</div>
     </div>
+    <div class="feat-card">
+      <div class="feat-icon">🔍</div>
+      <div class="feat-title">Import and explain</div>
+      <div class="feat-body">Paste your current header to start from it, or paste a console error or violation report to learn why it was blocked and fix it in one click.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">🧹</div>
+      <div class="feat-title">Find inline code</div>
+      <div class="feat-body">Scan Blade templates for inline scripts and styles without a nonce, onclick handlers, style attributes and javascript: links, with line numbers. Nothing leaves your browser.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">📡</div>
+      <div class="feat-title">Check what is live</div>
+      <div class="feat-body">Scan a page to see what it loads, or grade its deployed headers: duplicate CSP headers, a leaked X-Powered-By, missing HSTS, and how the live policy differs from yours.</div>
+    </div>
   </div>
 </section>
 
@@ -298,8 +316,150 @@ $faq = faq_items();
     <a href="https://securityheaders.com" target="_blank">Test your headers</a> &nbsp;·&nbsp;
     <a href="https://csp-evaluator.withgoogle.com" target="_blank">CSP Evaluator</a>
   </p>
-  <p class="footer-privacy">The generator runs in your browser. Nothing you configure is sent anywhere. Anonymous usage stats via Google Analytics and Microsoft Clarity.</p>
+  <p class="footer-privacy">The generator runs in your browser. Nothing you configure is sent anywhere, except a URL you ask us to scan. Anonymous usage stats via Google Analytics and Microsoft Clarity.</p>
 </footer>
+
+<!-- TOOLS -->
+<dialog class="tool-dialog" id="tool-menu" aria-labelledby="tool-menu-title">
+  <div class="tool-head">
+    <h2 class="tool-title" id="tool-menu-title">Tools</h2>
+    <button type="button" class="tool-close" data-close aria-label="Close">×</button>
+  </div>
+  <div class="tool-body">
+    <ul class="tool-list">
+    <li><button type="button" class="tool-item" data-tool="import"><span class="tool-item-name">Import a policy</span><span class="tool-item-desc">Paste an existing CSP header to start from it.</span></button></li>
+    <li><button type="button" class="tool-item" data-tool="explain"><span class="tool-item-name">Explain a violation</span><span class="tool-item-desc">Paste a console error or a violation report.</span></button></li>
+    <li><button type="button" class="tool-item" data-tool="blade"><span class="tool-item-name">Find inline code</span><span class="tool-item-desc">Scan Blade templates for code a nonce policy blocks.</span></button></li>
+    <li><button type="button" class="tool-item" data-tool="bookmarklet"><span class="tool-item-name">Discovery bookmarklet</span><span class="tool-item-desc">See what your live site loads, from your own browser.</span></button></li>
+    <li><button type="button" class="tool-item" data-tool="share"><span class="tool-item-name">Share this config</span><span class="tool-item-desc">A link that carries the config. It never reaches a server.</span></button></li>
+    <li><button type="button" class="tool-item" data-tool="scan"><span class="tool-item-name">Scan my site</span><span class="tool-item-desc">Fetch a page and propose the sources it needs.</span></button></li>
+    <li><button type="button" class="tool-item" data-tool="headers"><span class="tool-item-name">Check deployed headers</span><span class="tool-item-desc">Grade a site's live security headers against this policy.</span></button></li>
+    </ul>
+  </div>
+</dialog>
+<dialog class="tool-dialog" id="tool-import" aria-labelledby="tool-import-title">
+  <div class="tool-head">
+    <h2 class="tool-title" id="tool-import-title">Import a policy</h2>
+    <button type="button" class="tool-close" data-close aria-label="Close">×</button>
+  </div>
+  <div class="tool-body">
+    <p class="tool-sub">Services it recognises are turned on. Hosts it does not recognise go to Advanced, and anything the generator does not model is listed so you can keep it in mind.</p>
+    <label class="tool-label" for="import-text">Your current header, a header value, or a &lt;meta&gt; tag</label>
+    <textarea class="text-inp tool-text" id="import-text" rows="6" spellcheck="false" data-clarity-mask="true" placeholder="Content-Security-Policy: default-src 'self'; script-src 'self' https://js.stripe.com"></textarea>
+    <div class="tool-actions"><button type="button" class="cbtn cbtn-primary" data-action="import-read">Read policy</button></div>
+    <div class="tool-result" id="import-result" aria-live="polite" data-clarity-mask="true"></div>
+  </div>
+</dialog>
+<dialog class="tool-dialog" id="tool-explain" aria-labelledby="tool-explain-title">
+  <div class="tool-head">
+    <h2 class="tool-title" id="tool-explain-title">Explain a violation</h2>
+    <button type="button" class="tool-close" data-close aria-label="Close">×</button>
+  </div>
+  <div class="tool-body">
+    <label class="tool-label" for="explain-text">Console message or report JSON</label>
+    <textarea class="text-inp tool-text" id="explain-text" rows="5" spellcheck="false" data-clarity-mask="true" placeholder="Refused to load the script 'https://...' because it violates the following Content Security Policy directive: ..."></textarea>
+    <div class="tool-actions"><button type="button" class="cbtn cbtn-primary" data-action="explain">Explain</button></div>
+    <div class="tool-result" id="explain-result" aria-live="polite" data-clarity-mask="true"></div>
+  </div>
+</dialog>
+<dialog class="tool-dialog" id="tool-blade" aria-labelledby="tool-blade-title">
+  <div class="tool-head">
+    <h2 class="tool-title" id="tool-blade-title">Find inline code</h2>
+    <button type="button" class="tool-close" data-close aria-label="Close">×</button>
+  </div>
+  <div class="tool-body">
+    <p class="tool-sub">Nothing leaves your browser.</p>
+    <label class="tool-label" for="blade-text">Paste a template</label>
+    <textarea class="text-inp tool-text" id="blade-text" rows="7" spellcheck="false" data-clarity-mask="true" placeholder="Paste the contents of a .blade.php file"></textarea>
+    <label class="tool-label" for="blade-files">or choose .blade.php files</label>
+    <input class="tool-file" id="blade-files" type="file" multiple accept=".php,.html,.htm">
+    <div class="tool-actions">
+      <button type="button" class="cbtn cbtn-primary" data-action="blade-scan">Scan</button>
+      <button type="button" class="cbtn" data-action="blade-copy" hidden>Copy as Markdown</button>
+    </div>
+    <div class="tool-result" id="blade-result" aria-live="polite" data-clarity-mask="true"></div>
+  </div>
+</dialog>
+<dialog class="tool-dialog" id="tool-bookmarklet" aria-labelledby="tool-bookmarklet-title">
+  <div class="tool-head">
+    <h2 class="tool-title" id="tool-bookmarklet-title">Discovery bookmarklet</h2>
+    <button type="button" class="tool-close" data-close aria-label="Close">×</button>
+  </div>
+  <div class="tool-body">
+    <p class="tool-sub">It runs in your browser on your site and sends the list here in the URL hash, which never reaches a server.</p>
+    <ol class="tool-steps">
+      <li>Drag this link to your bookmarks bar: <a class="bookmarklet" id="bookmarklet-link" href="#">CSP discovery</a></li>
+      <li>Open your own site and click the bookmark.</li>
+      <li>Click around for three seconds. A new tab opens here with every origin the page loaded, grouped by type.</li>
+    </ol>
+    <p class="field-msg" id="bookmarklet-msg" aria-live="polite"></p>
+  </div>
+</dialog>
+<dialog class="tool-dialog" id="tool-share" aria-labelledby="tool-share-title">
+  <div class="tool-head">
+    <h2 class="tool-title" id="tool-share-title">Share this config</h2>
+    <button type="button" class="tool-close" data-close aria-label="Close">×</button>
+  </div>
+  <div class="tool-body">
+    <p class="tool-sub">Anyone who opens it is asked before it replaces their settings.</p>
+    <label class="tool-label" for="share-url">Link</label>
+    <div class="tool-row">
+      <input class="text-inp" id="share-url" type="text" readonly data-clarity-mask="true">
+      <button type="button" class="cbtn cbtn-primary" data-action="share-copy">Copy</button>
+    </div>
+  </div>
+</dialog>
+<dialog class="tool-dialog" id="tool-scan" aria-labelledby="tool-scan-title">
+  <div class="tool-head">
+    <h2 class="tool-title" id="tool-scan-title">Scan my site</h2>
+    <button type="button" class="tool-close" data-close aria-label="Close">×</button>
+  </div>
+  <div class="tool-body">
+    <p class="tool-sub">We fetch the page HTML once (no scripts run, nothing is stored or logged), and your browser reads it. Up to 20 scans an hour.</p>
+    <label class="tool-label" for="scan-url">Page URL</label>
+    <div class="tool-row">
+      <input class="text-inp" id="scan-url" type="url" inputmode="url" placeholder="https://your-app.com" autocomplete="url" spellcheck="false" data-clarity-mask="true">
+      <button type="button" class="cbtn cbtn-primary" data-action="scan">Scan</button>
+    </div>
+    <p class="field-msg" data-offline-note hidden>You are offline. Scanning needs a connection.</p>
+    <div class="tool-result" id="scan-result" aria-live="polite" data-clarity-mask="true"></div>
+  </div>
+</dialog>
+<dialog class="tool-dialog" id="tool-headers" aria-labelledby="tool-headers-title">
+  <div class="tool-head">
+    <h2 class="tool-title" id="tool-headers-title">Check deployed headers</h2>
+    <button type="button" class="tool-close" data-close aria-label="Close">×</button>
+  </div>
+  <div class="tool-body">
+    <p class="tool-sub">Compares the live headers with the Production policy you configured here.</p>
+    <label class="tool-label" for="headers-url">Page URL</label>
+    <div class="tool-row">
+      <input class="text-inp" id="headers-url" type="url" inputmode="url" placeholder="https://your-app.com" autocomplete="url" spellcheck="false" data-clarity-mask="true">
+      <button type="button" class="cbtn cbtn-primary" data-action="check-headers">Check</button>
+    </div>
+    <p class="field-msg" data-offline-note hidden>You are offline. Checking needs a connection.</p>
+    <div class="tool-result" id="headers-result" aria-live="polite" data-clarity-mask="true"></div>
+  </div>
+</dialog>
+<dialog class="tool-dialog" id="tool-shared" aria-labelledby="tool-shared-title">
+  <div class="tool-head">
+    <h2 class="tool-title" id="tool-shared-title">Load a shared config?</h2>
+    <button type="button" class="tool-close" data-close aria-label="Close">×</button>
+  </div>
+  <div class="tool-body">
+    <div class="tool-result" id="shared-result" data-clarity-mask="true"></div>
+    <div class="tool-actions"><button type="button" class="cbtn cbtn-primary" data-action="load-shared">Load it</button><button type="button" class="cbtn" data-close>Keep mine</button></div>
+  </div>
+</dialog>
+<dialog class="tool-dialog" id="tool-discover" aria-labelledby="tool-discover-title">
+  <div class="tool-head">
+    <h2 class="tool-title" id="tool-discover-title">What your site loads</h2>
+    <button type="button" class="tool-close" data-close aria-label="Close">×</button>
+  </div>
+  <div class="tool-body">
+    <div class="tool-result" id="discover-result" data-clarity-mask="true"></div>
+  </div>
+</dialog>
 
 </body>
 </html>

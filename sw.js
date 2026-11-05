@@ -1,4 +1,4 @@
-const CACHE = 'csp-v3';
+const CACHE = 'csp-v4';
 const FONT_CACHE = 'csp-fonts-v1';
 const SHELL = ['/manifest.json', '/favicon.svg', '/icon.php?s=192', '/icon.php?s=512'];
 
@@ -59,6 +59,8 @@ self.addEventListener('fetch', e => {
     return;
   }
   if (url.origin !== location.origin) return;
+  // Endpoints must always reach the server.
+  if (url.pathname.endsWith('.php') && url.pathname !== '/index.php') return;
 
   // Only the app itself may write the offline copy of "/"; other pages are cached under their own URL.
   if (url.pathname === '/' || url.pathname === '/index.php') {
