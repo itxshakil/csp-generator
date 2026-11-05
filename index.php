@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/lib/site-headers.php';
 require_once __DIR__ . '/lib/faq.php';
+require_once __DIR__ . '/lib/icons.php';
 require_once __DIR__ . '/lib/assets.php';
 
 $nonce = site_nonce();
@@ -97,14 +98,14 @@ $faq = faq_items();
       </div>
       <div class="config-actions">
         <button type="button" class="config-reset" data-action="tools" aria-haspopup="dialog">Tools</button>
-        <button type="button" class="config-reset" data-action="reset">↺ Reset</button>
+        <button type="button" class="config-reset" data-action="reset"><?= icon('rotate-ccw') ?> Reset</button>
       </div>
     </div>
 
     <section class="cfg-section open" id="sec-integrations">
       <button type="button" class="cfg-section-head" data-section="integrations" aria-expanded="true" aria-controls="body-integrations">
-        <span class="cfg-section-label"><span class="cfg-icon">🔌</span> Integrations <span class="cfg-count is-hidden" id="count-integrations"></span></span>
-        <span class="cfg-chevron" aria-hidden="true">▾</span>
+        <span class="cfg-section-label"><?= icon('plug', 'icon cfg-icon') ?> Integrations <span class="cfg-count is-hidden" id="count-integrations"></span></span>
+        <?= icon('chevron-down', 'icon cfg-chevron') ?>
       </button>
       <div class="cfg-body" id="body-integrations">
         <input class="text-inp search-inp" id="int-search" type="search" placeholder="Search integrations" aria-label="Search integrations" autocomplete="off" spellcheck="false">
@@ -115,8 +116,8 @@ $faq = faq_items();
     </section>
     <section class="cfg-section open" id="sec-stack">
       <button type="button" class="cfg-section-head" data-section="stack" aria-expanded="true" aria-controls="body-stack">
-        <span class="cfg-section-label"><span class="cfg-icon">🧱</span> Stack</span>
-        <span class="cfg-chevron" aria-hidden="true">▾</span>
+        <span class="cfg-section-label"><?= icon('blocks', 'icon cfg-icon') ?> Stack</span>
+        <?= icon('chevron-down', 'icon cfg-chevron') ?>
       </button>
       <div class="cfg-body" id="body-stack">
         <div id="stack-list"></div>
@@ -124,8 +125,8 @@ $faq = faq_items();
     </section>
     <section class="cfg-section" id="sec-hosting">
       <button type="button" class="cfg-section-head" data-section="hosting" aria-expanded="false" aria-controls="body-hosting">
-        <span class="cfg-section-label"><span class="cfg-icon">☁️</span> Hosting</span>
-        <span class="cfg-chevron" aria-hidden="true">▾</span>
+        <span class="cfg-section-label"><?= icon('cloud', 'icon cfg-icon') ?> Hosting</span>
+        <?= icon('chevron-down', 'icon cfg-chevron') ?>
       </button>
       <div class="cfg-body" id="body-hosting">
         <div id="hosting-list"></div>
@@ -133,8 +134,8 @@ $faq = faq_items();
     </section>
     <section class="cfg-section" id="sec-local">
       <button type="button" class="cfg-section-head" data-section="local" aria-expanded="false" aria-controls="body-local">
-        <span class="cfg-section-label"><span class="cfg-icon">💻</span> Local development</span>
-        <span class="cfg-chevron" aria-hidden="true">▾</span>
+        <span class="cfg-section-label"><?= icon('laptop', 'icon cfg-icon') ?> Local development</span>
+        <?= icon('chevron-down', 'icon cfg-chevron') ?>
       </button>
       <div class="cfg-body" id="body-local">
         <p class="cfg-note cfg-note--top">Used only for the Local output. Production never includes these.</p>
@@ -148,8 +149,8 @@ $faq = faq_items();
     </section>
     <section class="cfg-section" id="sec-reporting">
       <button type="button" class="cfg-section-head" data-section="reporting" aria-expanded="false" aria-controls="body-reporting">
-        <span class="cfg-section-label"><span class="cfg-icon">🚨</span> Reporting</span>
-        <span class="cfg-chevron" aria-hidden="true">▾</span>
+        <span class="cfg-section-label"><?= icon('bell', 'icon cfg-icon') ?> Reporting</span>
+        <?= icon('chevron-down', 'icon cfg-chevron') ?>
       </button>
       <div class="cfg-body" id="body-reporting">
         <div id="reporting-list"></div>
@@ -157,8 +158,8 @@ $faq = faq_items();
     </section>
     <section class="cfg-section" id="sec-advanced">
       <button type="button" class="cfg-section-head" data-section="advanced" aria-expanded="false" aria-controls="body-advanced">
-        <span class="cfg-section-label"><span class="cfg-icon">⚙️</span> Advanced</span>
-        <span class="cfg-chevron" aria-hidden="true">▾</span>
+        <span class="cfg-section-label"><?= icon('sliders', 'icon cfg-icon') ?> Advanced</span>
+        <?= icon('chevron-down', 'icon cfg-chevron') ?>
       </button>
       <div class="cfg-body" id="body-advanced">
         <div id="custom-list"></div>
@@ -228,15 +229,15 @@ $faq = faq_items();
             <input class="form-input" id="g-email" type="email" placeholder="you@yourapp.com" autocomplete="email" />
           </div>
           <input class="form-pot" id="g-pot" name="website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true" />
-          <button type="button" class="form-submit" data-action="submit-guide">Send me the PDF →</button>
+          <button type="button" class="form-submit" data-action="submit-guide">Send me the PDF <?= icon('arrow-right') ?></button>
           <p class="form-privacy">We store your email to send the guide and occasional CSP updates. Unsubscribe any time.</p>
         </div>
       </div>
       <div class="guide-success is-hidden" id="guide-success">
-        <div class="success-icon">✓</div>
+        <div class="success-icon"><?= icon('check') ?></div>
         <div class="success-title">You're on the list</div>
         <div class="success-sub">Thanks for signing up. Download the guide below.</div>
-        <a class="download-btn" href="https://csp-generator.shakiltech.com/laravel-csp-guide.pdf" download>↓ Download PDF</a>
+        <a class="download-btn" href="https://csp-generator.shakiltech.com/laravel-csp-guide.pdf" download><?= icon('download') ?> Download PDF</a>
       </div>
     </div>
   </div>
@@ -251,47 +252,47 @@ $faq = faq_items();
   </div>
   <div class="feat-grid">
     <div class="feat-card">
-      <div class="feat-icon">🎯</div>
+      <div class="feat-icon"><?= icon('target') ?></div>
       <div class="feat-title">Nonce-based by default</div>
       <div class="feat-body">Every policy uses per-request nonces, never 'unsafe-inline' for scripts. The middleware generates the nonce, shares it with Blade and registers it with Vite.</div>
     </div>
     <div class="feat-card">
-      <div class="feat-icon">🔌</div>
+      <div class="feat-icon"><?= icon('plug') ?></div>
       <div class="feat-title">27 integrations, explained</div>
       <div class="feat-body">Stripe, PayPal, GA4, Intercom, Google Maps, Sentry and more. Every host comes with the reason it is needed, following each vendor's CSP documentation.</div>
     </div>
     <div class="feat-card">
-      <div class="feat-icon">⚡</div>
+      <div class="feat-icon"><?= icon('layers') ?></div>
       <div class="feat-title">One config, two environments</div>
       <div class="feat-body">Production and Local output from the same settings. The middleware branches on the environment, so the Vite dev server never reaches production.</div>
     </div>
     <div class="feat-card">
-      <div class="feat-icon">⚖️</div>
+      <div class="feat-icon"><?= icon('gauge') ?></div>
       <div class="feat-title">A score that explains itself</div>
       <div class="feat-body">Every point lost is listed: 'unsafe-eval', CDNs that serve script gadgets, wildcard hosts, report-only mode. A size meter warns before nginx starts returning 502.</div>
     </div>
     <div class="feat-card">
-      <div class="feat-icon">🧩</div>
+      <div class="feat-icon"><?= icon('puzzle') ?></div>
       <div class="feat-title">Laravel and beyond</div>
       <div class="feat-body">Middleware, report controller and Pest test for Laravel, plus a spatie/laravel-csp preset, nginx, Apache and a meta tag.</div>
     </div>
     <div class="feat-card">
-      <div class="feat-icon">📋</div>
+      <div class="feat-icon"><?= icon('list-checks') ?></div>
       <div class="feat-title">A checklist that follows your stack</div>
       <div class="feat-body">Livewire, Inertia, Filament, Cloudflare and full-page caching each add the steps they need. Tick them off as you go, and export a summary for your auditor.</div>
     </div>
     <div class="feat-card">
-      <div class="feat-icon">🔍</div>
+      <div class="feat-icon"><?= icon('search') ?></div>
       <div class="feat-title">Import and explain</div>
       <div class="feat-body">Paste your current header to start from it, or paste a console error or violation report to learn why it was blocked and fix it in one click.</div>
     </div>
     <div class="feat-card">
-      <div class="feat-icon">🧹</div>
+      <div class="feat-icon"><?= icon('code') ?></div>
       <div class="feat-title">Find inline code</div>
       <div class="feat-body">Scan Blade templates for inline scripts and styles without a nonce, onclick handlers, style attributes and javascript: links, with line numbers. Nothing leaves your browser.</div>
     </div>
     <div class="feat-card">
-      <div class="feat-icon">📡</div>
+      <div class="feat-icon"><?= icon('radar') ?></div>
       <div class="feat-title">Check what is live</div>
       <div class="feat-body">Scan a page to see what it loads, or grade its deployed headers: duplicate CSP headers, a leaked X-Powered-By, missing HSTS, and how the live policy differs from yours.</div>
     </div>
@@ -305,7 +306,7 @@ $faq = faq_items();
     <div class="section-title">FAQ</div>
   </div>
 <?php foreach ($faq as $item): ?>
-  <div class="faq-item"><button type="button" class="faq-q"><?= htmlspecialchars($item['q']) ?> <span class="faq-ch">▾</span></button><div class="faq-a"><?= $item['a_html'] ?></div></div>
+  <div class="faq-item"><button type="button" class="faq-q"><?= htmlspecialchars($item['q']) ?> <?= icon('chevron-down', 'icon faq-ch') ?></button><div class="faq-a"><?= $item['a_html'] ?></div></div>
 <?php endforeach; ?>
 </section>
 
@@ -323,7 +324,7 @@ $faq = faq_items();
 <dialog class="tool-dialog" id="tool-menu" aria-labelledby="tool-menu-title">
   <div class="tool-head">
     <h2 class="tool-title" id="tool-menu-title">Tools</h2>
-    <button type="button" class="tool-close" data-close aria-label="Close">×</button>
+    <button type="button" class="tool-close" data-close aria-label="Close"><?= icon('x') ?></button>
   </div>
   <div class="tool-body">
     <ul class="tool-list">
@@ -340,7 +341,7 @@ $faq = faq_items();
 <dialog class="tool-dialog" id="tool-import" aria-labelledby="tool-import-title">
   <div class="tool-head">
     <h2 class="tool-title" id="tool-import-title">Import a policy</h2>
-    <button type="button" class="tool-close" data-close aria-label="Close">×</button>
+    <button type="button" class="tool-close" data-close aria-label="Close"><?= icon('x') ?></button>
   </div>
   <div class="tool-body">
     <p class="tool-sub">Services it recognises are turned on. Hosts it does not recognise go to Advanced, and anything the generator does not model is listed so you can keep it in mind.</p>
@@ -353,7 +354,7 @@ $faq = faq_items();
 <dialog class="tool-dialog" id="tool-explain" aria-labelledby="tool-explain-title">
   <div class="tool-head">
     <h2 class="tool-title" id="tool-explain-title">Explain a violation</h2>
-    <button type="button" class="tool-close" data-close aria-label="Close">×</button>
+    <button type="button" class="tool-close" data-close aria-label="Close"><?= icon('x') ?></button>
   </div>
   <div class="tool-body">
     <label class="tool-label" for="explain-text">Console message or report JSON</label>
@@ -365,7 +366,7 @@ $faq = faq_items();
 <dialog class="tool-dialog" id="tool-blade" aria-labelledby="tool-blade-title">
   <div class="tool-head">
     <h2 class="tool-title" id="tool-blade-title">Find inline code</h2>
-    <button type="button" class="tool-close" data-close aria-label="Close">×</button>
+    <button type="button" class="tool-close" data-close aria-label="Close"><?= icon('x') ?></button>
   </div>
   <div class="tool-body">
     <p class="tool-sub">Nothing leaves your browser.</p>
@@ -383,7 +384,7 @@ $faq = faq_items();
 <dialog class="tool-dialog" id="tool-bookmarklet" aria-labelledby="tool-bookmarklet-title">
   <div class="tool-head">
     <h2 class="tool-title" id="tool-bookmarklet-title">Discovery bookmarklet</h2>
-    <button type="button" class="tool-close" data-close aria-label="Close">×</button>
+    <button type="button" class="tool-close" data-close aria-label="Close"><?= icon('x') ?></button>
   </div>
   <div class="tool-body">
     <p class="tool-sub">It runs in your browser on your site and sends the list here in the URL hash, which never reaches a server.</p>
@@ -398,7 +399,7 @@ $faq = faq_items();
 <dialog class="tool-dialog" id="tool-share" aria-labelledby="tool-share-title">
   <div class="tool-head">
     <h2 class="tool-title" id="tool-share-title">Share this config</h2>
-    <button type="button" class="tool-close" data-close aria-label="Close">×</button>
+    <button type="button" class="tool-close" data-close aria-label="Close"><?= icon('x') ?></button>
   </div>
   <div class="tool-body">
     <p class="tool-sub">Anyone who opens it is asked before it replaces their settings.</p>
@@ -412,7 +413,7 @@ $faq = faq_items();
 <dialog class="tool-dialog" id="tool-scan" aria-labelledby="tool-scan-title">
   <div class="tool-head">
     <h2 class="tool-title" id="tool-scan-title">Scan my site</h2>
-    <button type="button" class="tool-close" data-close aria-label="Close">×</button>
+    <button type="button" class="tool-close" data-close aria-label="Close"><?= icon('x') ?></button>
   </div>
   <div class="tool-body">
     <p class="tool-sub">We fetch the page HTML once (no scripts run, nothing is stored or logged), and your browser reads it. Up to 20 scans an hour.</p>
@@ -428,7 +429,7 @@ $faq = faq_items();
 <dialog class="tool-dialog" id="tool-headers" aria-labelledby="tool-headers-title">
   <div class="tool-head">
     <h2 class="tool-title" id="tool-headers-title">Check deployed headers</h2>
-    <button type="button" class="tool-close" data-close aria-label="Close">×</button>
+    <button type="button" class="tool-close" data-close aria-label="Close"><?= icon('x') ?></button>
   </div>
   <div class="tool-body">
     <p class="tool-sub">Compares the live headers with the Production policy you configured here.</p>
@@ -444,7 +445,7 @@ $faq = faq_items();
 <dialog class="tool-dialog" id="tool-shared" aria-labelledby="tool-shared-title">
   <div class="tool-head">
     <h2 class="tool-title" id="tool-shared-title">Load a shared config?</h2>
-    <button type="button" class="tool-close" data-close aria-label="Close">×</button>
+    <button type="button" class="tool-close" data-close aria-label="Close"><?= icon('x') ?></button>
   </div>
   <div class="tool-body">
     <div class="tool-result" id="shared-result" data-clarity-mask="true"></div>
@@ -454,7 +455,7 @@ $faq = faq_items();
 <dialog class="tool-dialog" id="tool-discover" aria-labelledby="tool-discover-title">
   <div class="tool-head">
     <h2 class="tool-title" id="tool-discover-title">What your site loads</h2>
-    <button type="button" class="tool-close" data-close aria-label="Close">×</button>
+    <button type="button" class="tool-close" data-close aria-label="Close"><?= icon('x') ?></button>
   </div>
   <div class="tool-body">
     <div class="tool-result" id="discover-result" data-clarity-mask="true"></div>

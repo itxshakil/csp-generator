@@ -5,6 +5,7 @@ import { normalizeOrigin, normalizeSource, MAX_TAGS } from './sources.js';
 import { needsFor } from './policy.js';
 import { track } from './analytics.js';
 import { $, $$, el } from './dom.js';
+import { iconNode } from './icons.js';
 
 const KIND_LABELS = {
   script: 'script-src', style: 'style-src', img: 'img-src', font: 'font-src', frame: 'frame-src',
@@ -215,7 +216,7 @@ function sync(store) {
   });
   $('#int-chips').replaceChildren(...s.integrations.map(id => el('span', { class: 'chip', dataset: { id } },
     INTEGRATION_BY_ID[id].name,
-    el('button', { type: 'button', class: 'chip-x', 'aria-label': `Remove ${INTEGRATION_BY_ID[id].name}` }, '×'))));
+    el('button', { type: 'button', class: 'chip-x', 'aria-label': `Remove ${INTEGRATION_BY_ID[id].name}` }, iconNode('x')))));
   const count = $('#count-integrations');
   count.textContent = s.integrations.length || '';
   count.classList.toggle('is-hidden', !s.integrations.length);
@@ -239,11 +240,11 @@ function sync(store) {
 
   for (const kind of CUSTOM_KINDS) {
     $(`#tags-${kind}`).replaceChildren(...s.custom[kind].map(value => el('span', { class: 'dtag' }, value,
-      el('button', { type: 'button', class: 'dtag-x', dataset: { kind, value }, 'aria-label': `Remove ${value}` }, '×'))));
+      el('button', { type: 'button', class: 'dtag-x', dataset: { kind, value }, 'aria-label': `Remove ${value}` }, iconNode('x')))));
   }
   $('#embeds-list').replaceChildren(...s.embeds.map(e => el('li', { class: 'embed-row' },
     el('code', { class: 'code-plain' }, `/${e.path}`), ' ', el('span', { class: 'embed-origins' }, e.origins.join(' ')),
-    el('button', { type: 'button', class: 'dtag-x', dataset: { removeEmbed: e.path }, 'aria-label': `Remove /${e.path}` }, '×'))));
+    el('button', { type: 'button', class: 'dtag-x', dataset: { removeEmbed: e.path }, 'aria-label': `Remove /${e.path}` }, iconNode('x')))));
 
   $$('[data-preset]').forEach(b => b.setAttribute('aria-checked', String(b.dataset.preset === store.preset)));
 }

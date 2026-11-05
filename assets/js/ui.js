@@ -71,6 +71,7 @@ async function submitGuide(btn) {
     emailEl.classList.add('is-invalid');
     return;
   }
+  const label = [...btn.childNodes];
   btn.disabled = true;
   btn.textContent = 'Sending…';
   try {
@@ -84,7 +85,7 @@ async function submitGuide(btn) {
   } catch (e) {
     console.error('Guide signup failed', e);
     btn.disabled = false;
-    btn.textContent = 'Send me the PDF →';
+    btn.replaceChildren(...label);
     emailEl.classList.add('is-invalid');
     return;
   }
