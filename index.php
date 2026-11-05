@@ -68,21 +68,12 @@ $faq = faq_items();
   <div class="nav-right">
     <a class="nav-link" href="https://blog.shakiltech.com/how-we-implemented-content-security-policy-csp-laravel" target="_blank">Blog Post</a>
     <a class="nav-link" href="https://securityheaders.com" target="_blank">Test Headers</a>
-    <span class="nav-pill">Free Tool</span>
   </div>
 </nav>
 
 <section class="hero">
-  <div class="hero-badge"><div class="hero-badge-dot"></div> Laravel Security</div>
-  <h1>Generate a production-ready<br><em>Content Security Policy</em></h1>
-  <p class="hero-sub">Pick the services your app uses, copy the middleware, deploy with confidence. No signup needed.</p>
-  <div class="hero-tags">
-    <span class="tag">Nonce-based</span>
-    <span class="tag">Vite-ready</span>
-    <span class="tag">Livewire-aware</span>
-    <span class="tag">Violation reporting</span>
-    <span class="tag">Runs in your browser</span>
-  </div>
+  <h1>Generate a <em>Content Security Policy</em> for Laravel</h1>
+  <p class="hero-sub">Pick the services your app uses and copy a nonce-based middleware. Runs in your browser, no signup.</p>
 </section>
 
 <div class="tool">
@@ -195,54 +186,6 @@ $faq = faq_items();
 
 </div><!-- /tool -->
 
-<!-- GUIDE CTA -->
-<div class="guide-section">
-  <div class="guide-card">
-    <div class="guide-left">
-      <div class="guide-label">Free PDF Guide</div>
-      <div class="guide-title">Laravel CSP Quick Reference</div>
-      <p class="guide-sub">4 pages. Every directive, the checklist, common mistakes, and quick-start snippets - without keeping this tab open.</p>
-      <div class="guide-items">
-        <div class="guide-item"><div class="guide-item-dot"></div><div class="guide-item-text"><strong>All 13 directives</strong> with values and plain-English descriptions</div></div>
-        <div class="guide-item"><div class="guide-item-dot"></div><div class="guide-item-text"><strong>Pre-enforcement checklist</strong> - 12 items before enforcement</div></div>
-        <div class="guide-item"><div class="guide-item-dot"></div><div class="guide-item-text"><strong>5 common mistakes</strong> and how to avoid them</div></div>
-        <div class="guide-item"><div class="guide-item-dot"></div><div class="guide-item-text"><strong>Blade, Vite & Livewire</strong> quick-start snippets</div></div>
-      </div>
-    </div>
-    <div class="guide-right">
-      <div class="pdf-card">
-        <div class="pdf-icon"><span>PDF</span></div>
-        <div class="grow">
-          <div class="pdf-name">laravel-csp-guide.pdf</div>
-          <div class="pdf-meta">4 pages · Free · Instant download</div>
-        </div>
-        <span class="pdf-pages">4 pages</span>
-      </div>
-      <div id="guide-form">
-        <div class="guide-form">
-          <div class="form-field">
-            <label class="form-label" for="g-name">First name</label>
-            <input class="form-input" id="g-name" type="text" placeholder="Your name" autocomplete="given-name" />
-          </div>
-          <div class="form-field">
-            <label class="form-label" for="g-email">Email address</label>
-            <input class="form-input" id="g-email" type="email" placeholder="you@yourapp.com" autocomplete="email" />
-          </div>
-          <input class="form-pot" id="g-pot" name="website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true" />
-          <button type="button" class="form-submit" data-action="submit-guide">Send me the PDF <?= icon('arrow-right') ?></button>
-          <p class="form-privacy">We store your email to send the guide and occasional CSP updates. Unsubscribe any time.</p>
-        </div>
-      </div>
-      <div class="guide-success is-hidden" id="guide-success">
-        <div class="success-icon"><?= icon('check') ?></div>
-        <div class="success-title">You're on the list</div>
-        <div class="success-sub">Thanks for signing up. Download the guide below.</div>
-        <a class="download-btn" href="https://csp-generator.shakiltech.com/laravel-csp-guide.pdf" download><?= icon('download') ?> Download PDF</a>
-      </div>
-    </div>
-  </div>
-</div>
-
 <!-- FEATURES -->
 <section class="features">
   <div class="section-intro">
@@ -298,6 +241,49 @@ $faq = faq_items();
     </div>
   </div>
 </section>
+
+<!-- GUIDE CTA -->
+<div class="guide-section">
+  <div class="guide-card">
+    <div class="guide-left">
+      <div class="guide-label">Free PDF Guide</div>
+      <div class="guide-title">Laravel CSP Quick Reference</div>
+      <p class="guide-sub">4 pages. Every directive, the checklist, common mistakes, and quick-start snippets - without keeping this tab open.</p>
+      <div class="guide-items">
+        <div class="guide-item"><div class="guide-item-dot"></div><div class="guide-item-text"><strong>All 13 directives</strong> with values and plain-English descriptions</div></div>
+        <div class="guide-item"><div class="guide-item-dot"></div><div class="guide-item-text"><strong>Pre-enforcement checklist</strong> - 12 items before enforcement</div></div>
+        <div class="guide-item"><div class="guide-item-dot"></div><div class="guide-item-text"><strong>5 common mistakes</strong> and how to avoid them</div></div>
+        <div class="guide-item"><div class="guide-item-dot"></div><div class="guide-item-text"><strong>Blade, Vite & Livewire</strong> quick-start snippets</div></div>
+      </div>
+    </div>
+    <div class="guide-right">
+      <div class="pdf-card">
+        <div class="pdf-icon"><span>PDF</span></div>
+        <div class="grow">
+          <div class="pdf-name">laravel-csp-guide.pdf</div>
+          <div class="pdf-meta">4 pages · Free · Instant download</div>
+        </div>
+        <span class="pdf-pages">4 pages</span>
+      </div>
+      <form class="guide-form" id="guide-form" action="/save-email.php" method="post" novalidate>
+        <div class="form-field">
+          <label class="form-label" for="g-email">Email address</label>
+          <input class="form-input" id="g-email" name="email" type="email" placeholder="you@yourapp.com" autocomplete="email" required aria-describedby="g-error" data-clarity-mask="true">
+          <p class="form-error" id="g-error" role="alert"></p>
+        </div>
+        <input class="form-pot" id="g-pot" name="website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <button type="submit" class="form-submit">Send me the PDF <?= icon('arrow-right') ?></button>
+        <p class="form-privacy" id="g-privacy">We store your email to send the guide and occasional CSP updates. Unsubscribe any time.</p>
+      </form>
+      <div class="guide-success is-hidden" id="guide-success" tabindex="-1">
+        <div class="success-icon"><?= icon('check') ?></div>
+        <div class="success-title">You're on the list</div>
+        <div class="success-sub">Thanks for signing up. Download the guide below.</div>
+        <a class="download-btn" href="https://csp-generator.shakiltech.com/laravel-csp-guide.pdf" download><?= icon('download') ?> Download PDF</a>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- FAQ -->
 <section class="faq">

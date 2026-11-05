@@ -4,9 +4,9 @@ import { track, clarityTag } from './analytics.js';
 import { initConfig } from './ui-config.js';
 import { initOutput } from './ui-output.js';
 import { initTools } from './ui-tools.js';
+import { initSignup } from './ui-signup.js';
 
 const STORAGE_KEY = 'csp-state';
-const formStartedAt = Date.now();
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
@@ -61,43 +61,8 @@ function restore(store) {
   return true;
 }
 
-// ── Guide form ──────────────────────────────────────────────────────────────
-async function submitGuide(btn) {
-  const emailEl = $('#g-email');
-  const email = emailEl.value;
-  const name = $('#g-name').value || 'Friend';
-  const pot = $('#g-pot').value;
-  if (!email || !email.includes('@')) {
-    emailEl.classList.add('is-invalid');
-    return;
-  }
-  const label = [...btn.childNodes];
-  btn.disabled = true;
-  btn.textContent = 'Sending…';
-  try {
-    const res = await fetch('/save-email.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, pot, ts: formStartedAt }),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok || data.ok === false) throw new Error(data.error || 'Request failed');
-  } catch (e) {
-    console.error('Guide signup failed', e);
-    btn.disabled = false;
-    btn.replaceChildren(...label);
-    emailEl.classList.add('is-invalid');
-    return;
-  }
-  $('#guide-form').classList.add('is-hidden');
-  $('#guide-success').classList.remove('is-hidden');
-  track('guide_signup');
-  clarityTag('lead', 'true');
-}
-
 function wirePage() {
   $$('.faq-q').forEach(b => b.addEventListener('click', () => b.closest('.faq-item').classList.toggle('open')));
-  $('[data-action="submit-guide"]').addEventListener('click', e => submitGuide(e.currentTarget));
 }
 
 const store = createStore();
@@ -105,6 +70,7 @@ const restored = restore(store);
 initConfig(store);
 initOutput(store);
 wirePage();
+initSignup();
 // Restored settings are saved straight back, which rewrites old (v1) or tampered values in the clean v2 shape.
 if (restored) store.update(() => {});
 else store.applyPreset('strict');
