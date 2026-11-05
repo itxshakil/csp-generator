@@ -1,23 +1,22 @@
-// Syntax highlighting for a CSP string. Tokenizes instead of chaining regex replacements,
-// so highlighting can never alter the text that gets copied.
+// Syntax highlighting for a policy. Built from directives, never by regex over the string,
+// so highlighting can never alter the text, and each source carries its reasons as a tooltip.
 
 export function escapeHtml(s) {
-  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
-function sourceClass(token) {
-  if (token === "'self'") return 'sv';
-  if (token === "'none'") return 'sb';
-  if (token.startsWith("'nonce-")) return 'sn';
-  if (/^(https?|wss?):\/\//.test(token) || token.startsWith('/')) return 'su';
-  return '';
+function sourceClass(source) {
+  if (source === "'self'") return 'sv';
+  if (source === "'none'" || source.startsWith("'unsafe-")) return 'sb';
+  if (source.startsWith("'nonce-")) return 'sn';
+  return 'su';
 }
 
-const span = (cls, token) => (cls ? `<span class="${cls}">${escapeHtml(token)}</span>` : escapeHtml(token));
-
-export function highlightPolicy(policy) {
-  return policy.split('; ').map(directive => {
-    const [name, ...sources] = directive.split(' ');
-    return [span('sk', name), ...sources.map(s => span(sourceClass(s), s))].join(' ');
+// innerText of the result equals policyString(directives).
+export function highlightDirectives(directives) {
+  return directives.map(d => {
+    const name = `<span class="sk">${escapeHtml(d.name)}</span>`;
+    const sources = d.sources.map(s => `<span class="${sourceClass(s)}" title="${escapeHtml((d.reasons[s] ?? []).join('\n'))}">${escapeHtml(s)}</span>`);
+    return [name, ...sources].join(' ');
   }).join('; ');
 }

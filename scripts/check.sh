@@ -5,7 +5,7 @@ cd "$(dirname "$0")/.."
 
 for f in *.php lib/*.php tests/php/*.php; do
   [ -e "$f" ] || continue
-  php -l "$f" > /dev/null
+  out=$(php -l "$f" 2>&1) || { echo "$out"; exit 1; }
 done
 
 for f in assets/js/*.js sw.js; do
