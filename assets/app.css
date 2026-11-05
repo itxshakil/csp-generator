@@ -1,3 +1,6 @@
+/* Inter and JetBrains Mono, latin subsets, SIL Open Font License 1.1 (assets/fonts/OFL.txt). */
+@font-face{font-family:'Inter';font-style:normal;font-weight:400 600;font-display:swap;src:url(/assets/fonts/inter-latin-v20.woff2) format('woff2')}
+@font-face{font-family:'JetBrains Mono';font-style:normal;font-weight:400 500;font-display:swap;src:url(/assets/fonts/jetbrains-mono-latin-v24.woff2) format('woff2')}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :where(button.otab,button.cfg-section-head,.seg button){font:inherit;color:inherit;letter-spacing:inherit}
 :where(button.cfg-section-head){width:100%;background:none;border:none;text-align:left}

@@ -1,5 +1,4 @@
 const CACHE = 'csp-v4';
-const FONT_CACHE = 'csp-fonts-v1';
 const SHELL = ['/manifest.json', '/favicon.svg', '/icon.php?s=192', '/icon.php?s=512'];
 
 // Asset URLs carry ?v=<mtime>, so the page HTML lists exactly the files that belong together.
@@ -22,7 +21,7 @@ self.addEventListener('install', e => {
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(k => k !== CACHE && k !== FONT_CACHE).map(k => caches.delete(k))))
+      .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
@@ -54,10 +53,6 @@ self.addEventListener('fetch', e => {
   if (request.method !== 'GET') return;
   const url = new URL(request.url);
 
-  if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com') {
-    e.respondWith(cacheFirst(request, FONT_CACHE));
-    return;
-  }
   if (url.origin !== location.origin) return;
   // Endpoints must always reach the server.
   if (url.pathname.endsWith('.php') && url.pathname !== '/index.php') return;
