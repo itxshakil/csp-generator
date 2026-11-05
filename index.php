@@ -307,6 +307,8 @@ $faq = faq_items();
   <p class="footer-privacy">The generator runs in your browser. Nothing you configure is sent anywhere, except a URL you ask us to scan. Anonymous usage stats via Google Analytics and Microsoft Clarity.</p>
 </footer>
 
+<div id="announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
 <!-- TOOLS -->
 <dialog class="tool-dialog" id="tool-menu" aria-labelledby="tool-menu-title">
   <div class="tool-head">
