@@ -13,13 +13,15 @@ function sourceClass(source) {
 }
 
 // innerText of the result equals policyString(directives).
-export function highlightDirectives(directives) {
+// `added` holds "<directive> <source>" keys to highlight as just added.
+export function highlightDirectives(directives, added = new Set()) {
   return directives.map(d => {
     const name = `<span class="sk">${escapeHtml(d.name)}</span>`;
     const sources = d.sources.map(s => {
       const reasons = d.reasons[s] ?? [];
       const tip = reasons.length ? ` tabindex="0" data-tip="${escapeHtml(reasons.join('\n'))}"` : '';
-      return `<span class="${sourceClass(s)}"${tip}>${escapeHtml(s)}</span>`;
+      const cls = added.has(`${d.name} ${s}`) ? `${sourceClass(s)} src-added` : sourceClass(s);
+      return `<span class="${cls}"${tip}>${escapeHtml(s)}</span>`;
     });
     return [name, ...sources].join(' ');
   }).join('; ');
