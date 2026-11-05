@@ -16,7 +16,7 @@ function site_nonce(): string
     return base64_encode(random_bytes(16));
 }
 
-function site_csp(string $nonce, string $origin): string
+function site_csp(string $nonce): string
 {
     // GA4 (gtag) and Microsoft Clarity are the only third parties. Fonts are self-hosted.
     $ga      = 'https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com';
@@ -46,7 +46,7 @@ function site_csp(string $nonce, string $origin): string
 
 function send_site_headers(string $nonce, string $origin): void
 {
-    header('Content-Security-Policy: ' . site_csp($nonce, $origin));
+    header('Content-Security-Policy: ' . site_csp($nonce));
     header('Reporting-Endpoints: csp="' . $origin . '/csp-report.php"');
     header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
     header('X-Content-Type-Options: nosniff');

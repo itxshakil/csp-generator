@@ -2,10 +2,11 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/lib/site-headers.php';
+require_once __DIR__ . '/lib/rate-limit.php';
+
 const CSV_PATH       = __DIR__ . '/data/emails.csv';
 const RATE_FILE      = __DIR__ . '/data/rate.json';
-const REDIRECT_URL   = 'https://csp-generator.shakiltech.com';
-const ALLOWED_ORIGIN = 'https://csp-generator.shakiltech.com';
 const REDIRECT_DELAY = 10;
 const RATE_MAX       = 3;
 const RATE_WINDOW    = 86400;
@@ -13,8 +14,8 @@ const MIN_ELAPSED_MS = 2000;
 
 // CORS
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
-if ($origin === ALLOWED_ORIGIN) {
-    header('Access-Control-Allow-Origin: ' . ALLOWED_ORIGIN);
+if ($origin === SITE_ORIGIN) {
+    header('Access-Control-Allow-Origin: ' . SITE_ORIGIN);
 }
 header('Access-Control-Allow-Methods: POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
@@ -66,7 +67,7 @@ if ($isJson) {
         exit;
     }
     // Rate limit: too many submissions from this IP
-    if (check_rate_limit()) {
+    if (signup_rate_limited()) {
         echo json_encode(['ok' => true]);
         exit;
     }
@@ -82,7 +83,7 @@ if ($isJson) {
 
 // Direct visit with no POST - redirect home
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: ' . REDIRECT_URL);
+    header('Location: ' . SITE_ORIGIN);
     exit;
 }
 
@@ -91,7 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $success = false;
 if (!$error) {
     $isBot = ($_POST['website'] ?? '') !== '';
-    if (!$isBot && !check_rate_limit() && !email_exists($email)) {
+    if (!$isBot && !signup_rate_limited() && !email_exists($email)) {
         save_to_csv($name, $email);
     }
     $success = true;
@@ -100,7 +101,7 @@ if (!$error) {
 // Render redirect page
 $safeEmail     = htmlspecialchars($email);
 $safeName      = htmlspecialchars($firstName);
-$safeRedirect  = htmlspecialchars(REDIRECT_URL);
+$safeRedirect  = htmlspecialchars(SITE_ORIGIN);
 $safeError     = htmlspecialchars($error ?? '');
 $delay         = REDIRECT_DELAY;
 
@@ -222,7 +223,7 @@ h1{font-size:1.5rem;font-weight:600;letter-spacing:-0.025em;color:var(--dark);ma
 </div>
 <script>
 let n=<?= $delay ?>;const el=document.getElementById('cd');
-const iv=setInterval(()=>{n--;if(el)el.textContent=n;if(n<=0){clearInterval(iv);location.href='<?= REDIRECT_URL ?>';}},1000);
+const iv=setInterval(()=>{n--;if(el)el.textContent=n;if(n<=0){clearInterval(iv);location.href='<?= SITE_ORIGIN ?>';}},1000);
 </script>
 
 <?php else: ?>
@@ -249,30 +250,15 @@ const iv=setInterval(()=>{n--;if(el)el.textContent=n;if(n<=0){clearInterval(iv);
 <?php
 
 // Functions
-function check_rate_limit(): bool
+// The shared fixed-window limiter. A broken data/ folder must not stop signups, so it is logged and let through.
+function signup_rate_limited(): bool
 {
-    $dir = dirname(RATE_FILE);
-    if (!is_dir($dir)) mkdir($dir, 0750, true);
-    $key = hash('sha256', $_SERVER['REMOTE_ADDR'] ?? '');
-    $fp  = fopen(RATE_FILE, 'c+');
-    if (!$fp) return false;
-    flock($fp, LOCK_EX);
-    $raw = stream_get_contents($fp);
-    $map = json_decode($raw ?: '{}', true) ?? [];
-    $now = time();
-    $map = array_filter($map, fn($v) => isset($v[1]) && $v[1] > $now);
-    $entry   = $map[$key] ?? [0, $now + RATE_WINDOW];
-    $blocked = $entry[0] >= RATE_MAX;
-    if (!$blocked) {
-        $entry[0]++;
-        $map[$key] = $entry;
-        ftruncate($fp, 0);
-        rewind($fp);
-        fwrite($fp, json_encode($map));
+    try {
+        return rate_limited(RATE_FILE, $_SERVER['REMOTE_ADDR'] ?? '', RATE_MAX, RATE_WINDOW);
+    } catch (RuntimeException $e) {
+        error_log('Signup rate limit unavailable: ' . $e->getMessage());
+        return false;
     }
-    flock($fp, LOCK_UN);
-    fclose($fp);
-    return $blocked;
 }
 
 function email_exists(string $email): bool
