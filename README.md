@@ -73,6 +73,8 @@ This tool handles all of it so you don't debug it from scratch.
 - **Header size meter:** amber above 4 KB (the default nginx proxy buffer), red above 8 KB.
 - **Wildcard collapsing:** a wildcard like `https://*.google.com` absorbs the specific hosts it covers.
 - **Violation reporting:** `report-uri` and `report-to` with a `Reporting-Endpoints` header, plus a controller that drops browser extension noise.
+- **Quick to drive:** press `1` to `5` to switch tabs, `c` to copy, `/` to search integrations and `?` for the list.
+  Hover, focus or tap any source in the Header tab to see why it is there, and undo a Reset within 6 seconds.
 - **Runs in your browser:** nothing you configure is sent anywhere, except a URL you ask us to scan, and there is no signup.
   The site uses Google Analytics and Microsoft Clarity for anonymous usage stats.
 

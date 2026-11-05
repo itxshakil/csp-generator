@@ -1,5 +1,8 @@
-const CACHE = 'csp-v4';
-const SHELL = ['/manifest.json', '/favicon.svg', '/icon.php?s=192', '/icon.php?s=512'];
+const CACHE = 'csp-v5';
+const SHELL = [
+  '/manifest.json', '/favicon.svg', '/icon.php?s=192', '/icon.php?s=512',
+  '/assets/fonts/inter-latin-v20.woff2', '/assets/fonts/jetbrains-mono-latin-v24.woff2',
+];
 
 // Asset URLs carry ?v=<mtime>, so the page HTML lists exactly the files that belong together.
 const VERSIONED_ASSET = /\/assets\/[\w./-]+\?v=\d+/g;
@@ -60,7 +63,8 @@ self.addEventListener('fetch', e => {
   // Only the app itself may write the offline copy of "/"; other pages are cached under their own URL.
   if (url.pathname === '/' || url.pathname === '/index.php') {
     e.respondWith(networkFirst(request, '/'));
-  } else if (url.pathname.startsWith('/assets/') && url.searchParams.has('v')) {
+  } else if (url.pathname.startsWith('/assets/') && (url.searchParams.has('v') || url.pathname.startsWith('/assets/fonts/'))) {
+    // Versioned URLs and font files (versioned in their names) never change, so the cache answers first.
     e.respondWith(cacheFirst(request, CACHE));
   } else {
     e.respondWith(networkFirst(request));
