@@ -8,6 +8,7 @@ import { initTools } from './ui-tools.js';
 import { initSignup } from './ui-signup.js';
 import { shortcutFor } from './shortcuts.js';
 import { initUndoToast } from './ui-toast.js';
+import { initMobileBar } from './ui-mbar.js';
 
 const STORAGE_KEY = 'csp-state';
 
@@ -78,6 +79,7 @@ if (restored) store.update(() => {});
 else store.applyPreset('strict');
 initTools(store);
 initUndoToast(store);
+initMobileBar(store);
 wireShortcuts(output);
 
 if ('serviceWorker' in navigator) {

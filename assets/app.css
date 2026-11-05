@@ -464,3 +464,11 @@ footer{border-top:1px solid var(--border);background:var(--white);padding:1.75re
   .toast{transition:opacity .2s ease,translate .2s ease,display .2s allow-discrete,overlay .2s allow-discrete}
   @starting-style{.toast:popover-open{opacity:0;translate:-50% 8px}}
 }
+
+/* ── Grade and size bar, narrow screens only ── */
+.output{scroll-margin-top:68px}
+.mbar{position:fixed;left:0;right:0;bottom:0;z-index:90;display:flex;align-items:center;gap:0.5rem;padding:0.6rem 1rem calc(0.6rem + env(safe-area-inset-bottom));background:var(--white);border-top:1px solid var(--border);box-shadow:0 -6px 20px var(--shadow-seg)}
+.mbar-jump{margin-left:auto;display:inline-flex;align-items:center;gap:0.35rem;font-size:0.82rem;font-weight:600;color:var(--red);text-decoration:none;padding:0.35rem 0.2rem}
+.mbar .score-chip{white-space:nowrap}
+body.has-mbar .toast{bottom:calc(4.5rem + env(safe-area-inset-bottom))}
+@media(min-width:901px){.mbar{display:none}}
