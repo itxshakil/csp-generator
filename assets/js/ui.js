@@ -7,8 +7,6 @@ import { initTools } from './ui-tools.js';
 import { initSignup } from './ui-signup.js';
 
 const STORAGE_KEY = 'csp-state';
-const $ = (sel, root = document) => root.querySelector(sel);
-const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
 function save(state) {
   try {
@@ -61,15 +59,10 @@ function restore(store) {
   return true;
 }
 
-function wirePage() {
-  $$('.faq-q').forEach(b => b.addEventListener('click', () => b.closest('.faq-item').classList.toggle('open')));
-}
-
 const store = createStore();
 const restored = restore(store);
 initConfig(store);
 initOutput(store);
-wirePage();
 initSignup();
 // Restored settings are saved straight back, which rewrites old (v1) or tampered values in the clean v2 shape.
 if (restored) store.update(() => {});
