@@ -46,4 +46,10 @@ return [
         assert_true(str_contains($m[0][0], 'aria-live="polite"'), 'polite');
         assert_true(str_contains($m[0][0], 'class="sr-only"'), 'visually hidden');
     },
+    'a hidden grade and size bar links to the output for narrow screens' => function () {
+        [$html] = render_index();
+        assert_true(preg_match('#<div\b[^>]*id="mbar"[^>]*>#', $html, $m) === 1, 'mbar exists');
+        assert_true(str_contains($m[0], 'hidden'), 'hidden until scripts fill it');
+        assert_true(preg_match('#id="mbar".*?<a\b[^>]*href="\#out-body"#s', $html) === 1, 'jumps to the output');
+    },
 ];

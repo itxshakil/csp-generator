@@ -200,6 +200,12 @@ $faq = faq_items();
 
 </div><!-- /tool -->
 
+<div class="mbar" id="mbar" hidden>
+  <span class="mbar-grade score-chip"></span>
+  <span class="mbar-size score-chip"></span>
+  <a class="mbar-jump" href="#out-body">View output <?= icon('arrow-right') ?></a>
+</div>
+
 <!-- FEATURES -->
 <section class="features">
   <div class="section-intro">
