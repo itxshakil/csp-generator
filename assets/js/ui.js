@@ -9,6 +9,7 @@ import { initSignup } from './ui-signup.js';
 import { shortcutFor } from './shortcuts.js';
 import { initUndoToast } from './ui-toast.js';
 import { initMobileBar } from './ui-mbar.js';
+import { $ } from './dom.js';
 
 const STORAGE_KEY = 'csp-state';
 
@@ -42,17 +43,17 @@ function restore(store) {
 }
 
 function focusSearch() {
-  const head = document.querySelector('#sec-integrations .cfg-section-head');
+  const head = $('#sec-integrations .cfg-section-head');
   if (head.getAttribute('aria-expanded') === 'false') head.click();
-  const search = document.querySelector('#int-search');
+  const search = $('#int-search');
   search.focus({ preventScroll: true });
   search.scrollIntoView({ block: 'center' });
 }
 
 function wireShortcuts(output) {
-  const help = document.querySelector('#kbd-help');
+  const help = $('#kbd-help');
   document.addEventListener('keydown', e => {
-    const action = shortcutFor(e, Boolean(document.querySelector('dialog[open]')));
+    const action = shortcutFor(e, Boolean($('dialog[open]')));
     if (!action) return;
     e.preventDefault();
     if (action.type === 'tab') output.setTab(action.tab);

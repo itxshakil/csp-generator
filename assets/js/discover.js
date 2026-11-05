@@ -2,7 +2,7 @@
 // Works on any document-like object, so the browser passes a DOMParser document and the tests a fake.
 import { INTEGRATIONS } from './integrations.js';
 import { findIntegration, parsePolicy } from './parse.js';
-import { covers } from './sources.js';
+import { covers, urlOrigin } from './sources.js';
 import { CUSTOM_KINDS } from './state.js';
 import { sizeLevel } from './policy.js';
 
@@ -11,19 +11,11 @@ const EXECUTABLE = new Set(['', 'text/javascript', 'application/javascript', 'mo
 // Two services share one host; the path tells them apart.
 const PATH_HINTS = [[/^https:\/\/www\.googletagmanager\.com\/gtag\//, 'ga4'], [/^https:\/\/www\.googletagmanager\.com\/gtm\.js/, 'gtm']];
 
-function originOf(value, base) {
-  try {
-    const u = new URL(value, base);
-    return ['http:', 'https:', 'ws:', 'wss:'].includes(u.protocol) ? { origin: u.origin, href: u.href } : null;
-  } catch {
-    return null;
-  }
-}
 
 export function resourcesFromDocument(doc, baseUrl) {
   const found = new Map();
   const add = (value, type) => {
-    const o = value ? originOf(value.trim(), baseUrl) : null;
+    const o = value ? urlOrigin(value.trim(), baseUrl) : null;
     if (!o) return;
     const key = `${type} ${o.origin}`;
     const hint = PATH_HINTS.find(([re]) => re.test(o.href))?.[1];
@@ -74,13 +66,10 @@ export function proposeConfig(resources, pageOrigin) {
   const chosen = new Set();
   const custom = Object.fromEntries(CUSTOM_KINDS.map(k => [k, []]));
   const unsorted = [];
-  let sameOrigin = 0;
   const explainedBy = (kind, url) => INTEGRATIONS.some(i => chosen.has(i.id) && (i.sources[kind] ?? []).some(([s]) => s === url || covers(s, url)));
 
-  const outside = resources.filter(r => {
-    if (r.url === pageOrigin) { sameOrigin++; return false; }
-    return true;
-  });
+  const outside = resources.filter(r => r.url !== pageOrigin);
+  const sameOrigin = resources.length - outside.length;
   // Hints and direct matches first, so later resources can be explained by an integration already chosen.
   for (const r of outside) {
     if (r.hint) { chosen.add(r.hint); continue; }

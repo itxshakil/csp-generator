@@ -1,5 +1,5 @@
 // The output panel: five tabs rendered from pure modules. Every value from state goes through escapeHtml.
-import { buildDirectives, headerName, headerBytes, sizeLevel, scorePolicy, grade, SIZE_WARN, SIZE_OVER, REPORT_GROUP, REPORT_PATH } from './policy.js';
+import { buildDirectives, headerName, headerBytes, sizeLevel, scorePolicy, grade, SIZE_CLASS, SIZE_WARN, SIZE_OVER, REPORT_GROUP, REPORT_PATH } from './policy.js';
 import * as F from './formats.js';
 import { checklistItems, summaryMarkdown, CHECKLIST_KEY } from './checklist.js';
 import { escapeHtml, highlightDirectives } from './highlight.js';
@@ -9,19 +9,15 @@ import { sourceDiff, removedNote } from './diff.js';
 import { copyWithFeedback } from './announce.js';
 import { iconSvg } from './icons.js';
 import { track, clarityTag } from './analytics.js';
+import { $, $$, markNew } from './dom.js';
+import { OUTPUT_TABS as TABS } from './shortcuts.js';
 
-const $ = (sel, root = document) => root.querySelector(sel);
-const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
-
-const TABS = ['header', 'laravel', 'formats', 'checklist', 'summary'];
 let tab = 'header';
 let env = 'production';
 let lastGrade = '';
 let lastChecklist = null;
-// The policy before the last change, per environment, and what that change did. A render that is not
-// caused by a change (tab or environment switch) shows no highlight.
-let previous = { production: null, local: null };
-let lastDiff = null;
+// The policy of the shown environment before the last change, so the Header tab can show what changed.
+let previous = null;
 // A secret token for the nginx sub_filter placeholder, fresh per visit. Letters and digits only.
 const NGINX_TOKEN = Array.from(crypto.getRandomValues(new Uint8Array(16)), b => 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'[b % 62]).join('');
 // Plain text behind every Copy and Download button, keyed by block id, so copies never pick up markup.
@@ -75,17 +71,17 @@ function callout(level, html) {
 }
 
 // ── Tabs ────────────────────────────────────────────────────────────────────
-function renderHeader(s) {
+// `diff` is what the last change did; renders that no change caused (tab or environment switch) pass none.
+function renderHeader(s, diff) {
   const dirs = buildDirectives(s, env);
-  const diff = lastDiff;
   const note = diff ? removedNote(diff.removed) : '';
-  const { score, deductions } = scorePolicy(s);
+  const { score, deductions } = scorePolicy(s, env === 'production' ? dirs : undefined);
   const g = grade(score);
-  const bytes = headerBytes(s, env);
+  const bytes = headerBytes(s, env, dirs);
   const level = sizeLevel(bytes);
-  const sizeCls = { ok: 'grade-a', warn: 'grade-b', over: 'grade-d' }[level];
+  const sizeCls = SIZE_CLASS[level];
   const name = headerName(s);
-  const value = F.headerValue(s, env);
+  const value = F.headerValue(s, env, dirs);
   texts.set('hdr', value);
   const reportingLine = `${REPORT_GROUP}="${REPORT_PATH}"`;
   if (s.reporting) texts.set('rep', reportingLine);
@@ -223,25 +219,13 @@ export function initOutput(store) {
   const body = $('#out-body');
   initTooltips(body, $('#src-tip'));
 
-  const render = () => {
-    const s = store.state;
+  const render = (diff = null) => {
     texts.clear();
-    body.innerHTML = RENDERERS[tab](s);
-    lastDiff = null;
+    body.innerHTML = RENDERERS[tab](store.state, diff);
     // Widths go through the CSSOM: style="" attributes are blocked by our own style-src-attr 'none'.
     $$('[data-width]', body).forEach(el => { el.style.width = el.dataset.width + '%'; });
     // Only checklist rows that a config change added animate in, not every row on every render.
-    const ids = new Set($$('[data-check-id]', body).map(b => b.dataset.checkId));
-    if (tab === 'checklist' && lastChecklist) {
-      ids.forEach(id => { if (!lastChecklist.has(id)) $(`[data-check-id="${CSS.escape(id)}"]`, body).closest('.chk-row').classList.add('is-new'); });
-    }
-    lastChecklist = tab === 'checklist' ? ids : null;
-    const g = grade(scorePolicy(s).score).label;
-    if (g !== lastGrade) {
-      lastGrade = g;
-      track('policy_score', { grade: g });
-      clarityTag('score_grade', g);
-    }
+    lastChecklist = tab === 'checklist' ? markNew(lastChecklist, $$('.chk-row', body), r => $('[data-check-id]', r).dataset.checkId) : null;
   };
 
   const setTab = (next, focus = false) => {
@@ -282,6 +266,7 @@ export function initOutput(store) {
     const envBtn = e.target.closest('[data-env]');
     if (envBtn && envBtn.dataset.env !== env) {
       env = envBtn.dataset.env;
+      previous = buildDirectives(store.state, env);
       render();
       track('switch_env', { env });
     }
@@ -306,9 +291,15 @@ export function initOutput(store) {
   });
 
   store.onChange(() => {
-    const next = { production: buildDirectives(store.state, 'production'), local: buildDirectives(store.state, 'local') };
-    lastDiff = sourceDiff(previous[env], next[env]);
+    const next = buildDirectives(store.state, env);
+    const diff = sourceDiff(previous, next);
     previous = next;
+    const g = grade(scorePolicy(store.state, env === 'production' ? next : undefined).score).label;
+    if (g !== lastGrade) {
+      lastGrade = g;
+      track('policy_score', { grade: g });
+      clarityTag('score_grade', g);
+    }
     const active = document.activeElement;
     if (tab === 'summary' && active && body.contains(active) && active.type === 'date') {
       const md = summaryMarkdown(store.state);
@@ -316,7 +307,7 @@ export function initOutput(store) {
       $('#pre-summary', body).textContent = md;
       return;
     }
-    render();
+    render(diff);
   });
 
   return {

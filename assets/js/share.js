@@ -1,5 +1,5 @@
 // Config and discovery data carried in the URL hash. The hash never reaches a server.
-import { DEFAULT_STATE, sanitizeState } from './state.js';
+import { DEFAULT_STATE, KIND_DIRECTIVE, sanitizeState } from './state.js';
 import { normalizeSource } from './sources.js';
 import { INTEGRATION_BY_ID, STACK, HOSTING } from './integrations.js';
 
@@ -82,15 +82,13 @@ export function bookmarkletSource(appOrigin) {
   return 'javascript:' + encodeURIComponent(code);
 }
 
-const CUSTOM_LABELS = { script: 'script-src', style: 'style-src', img: 'img-src', font: 'font-src', frame: 'frame-src', connect: 'connect-src', media: 'media-src', form: 'form-action' };
-
 // Everything a shared config would change, in plain lines, script hosts first because they matter most.
 // Shown before loading, since anyone can write a link.
 export function describeShared(state) {
   const lines = [];
   const order = ['script', 'style', 'connect', 'frame', 'form', 'img', 'font', 'media'];
   for (const kind of order) {
-    if (state.custom[kind].length) lines.push(`Adds to ${CUSTOM_LABELS[kind]}: ${state.custom[kind].join(' ')}`);
+    if (state.custom[kind].length) lines.push(`Adds to ${KIND_DIRECTIVE[kind]}: ${state.custom[kind].join(' ')}`);
   }
   if (state.integrations.length) lines.push(`Services: ${state.integrations.map(id => INTEGRATION_BY_ID[id].name).join(', ')}`);
   const stack = state.stack.filter(id => id !== 'vite');

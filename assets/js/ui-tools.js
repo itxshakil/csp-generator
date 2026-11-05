@@ -10,6 +10,8 @@ import { headerValue } from './formats.js';
 import { track } from './analytics.js';
 import { $, $$, el } from './dom.js';
 
+const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+
 const KIND_LABELS = { script: 'Scripts', style: 'Styles', img: 'Images', font: 'Fonts', frame: 'Frames', connect: 'Connections', media: 'Media', form: 'Form targets' };
 const BLADE_LABELS = { 'inline-script': '<script> without nonce', 'inline-style': '<style> without nonce', handler: 'on* handler', 'style-attr': 'style="" attribute', 'js-url': 'javascript: URL' };
 
@@ -53,9 +55,9 @@ function renderProposal(container, proposal, page, applyAction, onApply) {
         el('input', { type: 'checkbox', checked: true, dataset: { kind: k, url } }), el('code', {}, url), ` ${KIND_LABELS[k]}`))))
     : null;
   const extra = [
-    proposal.sameOrigin ? el('p', { class: 'tool-note' }, `${proposal.sameOrigin} same-origin resource${proposal.sameOrigin === 1 ? '' : 's'} already covered by 'self'.`) : null,
+    proposal.sameOrigin ? el('p', { class: 'tool-note' }, `${plural(proposal.sameOrigin, 'same-origin resource')} already covered by 'self'.`) : null,
     proposal.unsorted?.length ? el('p', { class: 'tool-note' }, `Not sure where these belong: ${proposal.unsorted.join(' ')}`) : null,
-    proposal.inline ? el('p', { class: 'tool-note' }, `${proposal.inline.scripts} inline script${proposal.inline.scripts === 1 ? '' : 's'} and ${proposal.inline.styles} inline style${proposal.inline.styles === 1 ? '' : 's'} without a nonce. Use Find inline code on your templates.`) : null,
+    proposal.inline ? el('p', { class: 'tool-note' }, `${plural(proposal.inline.scripts, 'inline script')} and ${plural(proposal.inline.styles, 'inline style')} without a nonce. Use Find inline code on your templates.`) : null,
   ];
   const apply = el('button', { type: 'button', class: 'cbtn cbtn-primary', dataset: { action: applyAction } }, 'Use these sources');
   apply.addEventListener('click', () => {
@@ -164,7 +166,7 @@ export function initTools(store) {
     $('[data-action="blade-copy"]').hidden = !findings.length;
     if (!findings.length) { message(result, 'Nothing found. Every inline script and style carries a nonce.'); return; }
     result.replaceChildren(
-      el('p', { class: 'tool-msg' }, `${findings.length} item${findings.length === 1 ? '' : 's'} to fix.`),
+      el('p', { class: 'tool-msg' }, `${plural(findings.length, 'item')} to fix.`),
       el('div', { class: 'tool-table-wrap' }, el('table', { class: 'tool-table' },
         el('thead', {}, el('tr', {}, el('th', {}, 'Where'), el('th', {}, 'What'), el('th', {}, 'Fix'))),
         el('tbody', {}, ...findings.map(f => el('tr', { class: 'finding' },
@@ -229,7 +231,7 @@ export function initTools(store) {
     onResult(data);
   };
   const summary = data => el('p', { class: 'tool-msg' }, `HTTP ${data.status} from `, el('code', {}, data.finalUrl),
-    data.redirects.length ? ` after ${data.redirects.length} redirect${data.redirects.length === 1 ? '' : 's'}` : '',
+    data.redirects.length ? ` after ${plural(data.redirects.length, 'redirect')}` : '',
     data.truncated ? ' (page cut at 1 MB)' : '', '.');
 
   $('[data-action="scan"]').addEventListener('click', e => {
