@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import { sourceDiff, removedNote } from '../../assets/js/diff.js';
 import { buildDirectives } from '../../assets/js/policy.js';
 import { highlightDirectives } from '../../assets/js/highlight.js';
-import { DEFAULT_STATE, sanitizeState } from '../../assets/js/state.js';
+import { stateWith } from './helpers.js';
 
-const state = integrations => sanitizeState({ ...structuredClone(DEFAULT_STATE), integrations });
+const state = integrations => stateWith({ integrations });
 const BASE = buildDirectives(state([]));
 const STRIPE = buildDirectives(state(['stripe']));
 

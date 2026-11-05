@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import { parsePolicy, importPolicy } from '../../assets/js/parse.js';
 import { headerValue } from '../../assets/js/formats.js';
 import { headerName } from '../../assets/js/policy.js';
-import { DEFAULT_STATE, PRESETS, CUSTOM_KINDS, sanitizeState } from '../../assets/js/state.js';
+import { CUSTOM_KINDS } from '../../assets/js/state.js';
+import { preset } from './helpers.js';
 
-const preset = (name, extra = {}) => sanitizeState({ ...structuredClone(DEFAULT_STATE), ...PRESETS[name], ...extra });
 
 test('parsePolicy reads a bare value, a header line, a report-only line and a meta tag', () => {
   const value = "default-src 'self'; script-src 'self' https://a.com";

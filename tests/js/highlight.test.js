@@ -2,10 +2,10 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { highlightDirectives, escapeHtml } from '../../assets/js/highlight.js';
 import { buildDirectives, policyString } from '../../assets/js/policy.js';
-import { DEFAULT_STATE, sanitizeState } from '../../assets/js/state.js';
+import { stateWith } from './helpers.js';
 
 const text = html => html.replace(/<[^>]+>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&');
-const STATE = sanitizeState({ ...structuredClone(DEFAULT_STATE), integrations: ['tawk'], stack: ['livewire'] });
+const STATE = stateWith({ integrations: ['tawk'], stack: ['livewire'] });
 const DIRS = buildDirectives(STATE);
 
 test('highlighting never changes the text', () => {

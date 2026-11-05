@@ -1,9 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { explainViolation } from '../../assets/js/parse.js';
-import { DEFAULT_STATE, PRESETS, sanitizeState } from '../../assets/js/state.js';
+import { sanitizeState } from '../../assets/js/state.js';
+import { preset } from './helpers.js';
 
-const S = sanitizeState({ ...structuredClone(DEFAULT_STATE), ...PRESETS.strict });
+const S = preset('strict');
 
 test('Chrome: refused to load a script', () => {
   const r = explainViolation(`Refused to load the script 'https://js.stripe.com/v3/' because it violates the following Content Security Policy directive: "script-src 'self' 'nonce-abc'". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback.`, S);

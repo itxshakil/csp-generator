@@ -6,10 +6,10 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import * as F from '../../assets/js/formats.js';
 import { buildDirectives } from '../../assets/js/policy.js';
-import { DEFAULT_STATE, PRESETS, CUSTOM_KINDS, sanitizeState } from '../../assets/js/state.js';
+import { CUSTOM_KINDS } from '../../assets/js/state.js';
+import { preset } from './helpers.js';
 import { INTEGRATIONS, STACK, HOSTING } from '../../assets/js/integrations.js';
 
-const preset = (name, extra = {}) => sanitizeState({ ...structuredClone(DEFAULT_STATE), ...PRESETS[name], ...extra });
 const KITCHEN = preset('strict', {
   integrations: INTEGRATIONS.map(i => i.id), stack: STACK.map(s => s.id), hosting: HOSTING.map(h => h.id),
   custom: Object.fromEntries(CUSTOM_KINDS.map(k => [k, ['https://*.x-y.example.com:8443', `https://${k}.example.com`]])),

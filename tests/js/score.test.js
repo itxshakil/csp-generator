@@ -1,10 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { scorePolicy, headerBytes, headerName, sizeLevel, buildDirectives, policyString } from '../../assets/js/policy.js';
-import { DEFAULT_STATE, PRESETS, sanitizeState } from '../../assets/js/state.js';
+import { preset } from './helpers.js';
 import { INTEGRATIONS, STACK, HOSTING } from '../../assets/js/integrations.js';
 
-const preset = (name, extra = {}) => sanitizeState({ ...structuredClone(DEFAULT_STATE), ...PRESETS[name], ...extra });
 const ids = r => r.deductions.map(d => d.id);
 
 test('strict scores 100 with no deductions', () => {
