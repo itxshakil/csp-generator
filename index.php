@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/lib/site-headers.php';
 require_once __DIR__ . '/lib/faq.php';
+require_once __DIR__ . '/lib/icons.php';
 require_once __DIR__ . '/lib/assets.php';
 
 $nonce = site_nonce();
@@ -49,9 +50,7 @@ $faq = faq_items();
 <meta name="theme-color" content="#18151F"  media="(prefers-color-scheme: dark)">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Laravel CSP Generator","url":"https://csp-generator.shakiltech.com","description":"Free tool to generate production-ready Content Security Policy for Laravel","applicationCategory":"DeveloperApplication","operatingSystem":"Any","featureList":["Nonce-based CSP","27 third-party integrations","Production and local policies from one config","Explained policy score","Header size meter","Laravel middleware, spatie preset, nginx, Apache and meta tag output","Violation reporting","Import an existing header","Violation explainer","Blade inline code scanner","Live header check"],"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"creator":{"@type":"Person","name":"Shakil","url":"https://blog.shakiltech.com"}}</script>
 <script type="application/ld+json"><?= faq_jsonld($faq) ?></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" nonce="<?= $n ?>" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="preload" href="/assets/fonts/inter-latin-v20.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" nonce="<?= $n ?>" href="<?= asset_url('/assets/app.css') ?>">
 <script type="importmap" nonce="<?= $n ?>"><?= import_map_json() ?></script>
 <script type="module" nonce="<?= $n ?>" src="<?= asset_url('/assets/js/analytics.js') ?>"></script>
@@ -67,21 +66,12 @@ $faq = faq_items();
   <div class="nav-right">
     <a class="nav-link" href="https://blog.shakiltech.com/how-we-implemented-content-security-policy-csp-laravel" target="_blank">Blog Post</a>
     <a class="nav-link" href="https://securityheaders.com" target="_blank">Test Headers</a>
-    <span class="nav-pill">Free Tool</span>
   </div>
 </nav>
 
 <section class="hero">
-  <div class="hero-badge"><div class="hero-badge-dot"></div> Laravel Security</div>
-  <h1>Generate a production-ready<br><em>Content Security Policy</em></h1>
-  <p class="hero-sub">Pick the services your app uses, copy the middleware, deploy with confidence. No signup needed.</p>
-  <div class="hero-tags">
-    <span class="tag">Nonce-based</span>
-    <span class="tag">Vite-ready</span>
-    <span class="tag">Livewire-aware</span>
-    <span class="tag">Violation reporting</span>
-    <span class="tag">Runs in your browser</span>
-  </div>
+  <h1>Generate a <em>Content Security Policy</em> for Laravel</h1>
+  <p class="hero-sub">Pick the services your app uses and copy a nonce-based middleware. Runs in your browser, no signup.</p>
 </section>
 
 <div class="tool">
@@ -97,14 +87,18 @@ $faq = faq_items();
       </div>
       <div class="config-actions">
         <button type="button" class="config-reset" data-action="tools" aria-haspopup="dialog">Tools</button>
-        <button type="button" class="config-reset" data-action="reset">↺ Reset</button>
+        <button type="button" class="config-reset" data-action="reset"><?= icon('rotate-ccw') ?> Reset</button>
+        <div class="toast" id="toast" popover="manual" role="status">
+          <span>Settings reset.</span>
+          <button type="button" class="toast-undo">Undo</button>
+        </div>
       </div>
     </div>
 
     <section class="cfg-section open" id="sec-integrations">
       <button type="button" class="cfg-section-head" data-section="integrations" aria-expanded="true" aria-controls="body-integrations">
-        <span class="cfg-section-label"><span class="cfg-icon">🔌</span> Integrations <span class="cfg-count is-hidden" id="count-integrations"></span></span>
-        <span class="cfg-chevron" aria-hidden="true">▾</span>
+        <span class="cfg-section-label"><?= icon('plug', 'icon cfg-icon') ?> Integrations <span class="cfg-count is-hidden" id="count-integrations"></span></span>
+        <?= icon('chevron-down', 'icon cfg-chevron') ?>
       </button>
       <div class="cfg-body" id="body-integrations">
         <input class="text-inp search-inp" id="int-search" type="search" placeholder="Search integrations" aria-label="Search integrations" autocomplete="off" spellcheck="false">
@@ -115,8 +109,8 @@ $faq = faq_items();
     </section>
     <section class="cfg-section open" id="sec-stack">
       <button type="button" class="cfg-section-head" data-section="stack" aria-expanded="true" aria-controls="body-stack">
-        <span class="cfg-section-label"><span class="cfg-icon">🧱</span> Stack</span>
-        <span class="cfg-chevron" aria-hidden="true">▾</span>
+        <span class="cfg-section-label"><?= icon('blocks', 'icon cfg-icon') ?> Stack</span>
+        <?= icon('chevron-down', 'icon cfg-chevron') ?>
       </button>
       <div class="cfg-body" id="body-stack">
         <div id="stack-list"></div>
@@ -124,8 +118,8 @@ $faq = faq_items();
     </section>
     <section class="cfg-section" id="sec-hosting">
       <button type="button" class="cfg-section-head" data-section="hosting" aria-expanded="false" aria-controls="body-hosting">
-        <span class="cfg-section-label"><span class="cfg-icon">☁️</span> Hosting</span>
-        <span class="cfg-chevron" aria-hidden="true">▾</span>
+        <span class="cfg-section-label"><?= icon('cloud', 'icon cfg-icon') ?> Hosting</span>
+        <?= icon('chevron-down', 'icon cfg-chevron') ?>
       </button>
       <div class="cfg-body" id="body-hosting">
         <div id="hosting-list"></div>
@@ -133,8 +127,8 @@ $faq = faq_items();
     </section>
     <section class="cfg-section" id="sec-local">
       <button type="button" class="cfg-section-head" data-section="local" aria-expanded="false" aria-controls="body-local">
-        <span class="cfg-section-label"><span class="cfg-icon">💻</span> Local development</span>
-        <span class="cfg-chevron" aria-hidden="true">▾</span>
+        <span class="cfg-section-label"><?= icon('laptop', 'icon cfg-icon') ?> Local development</span>
+        <?= icon('chevron-down', 'icon cfg-chevron') ?>
       </button>
       <div class="cfg-body" id="body-local">
         <p class="cfg-note cfg-note--top">Used only for the Local output. Production never includes these.</p>
@@ -148,8 +142,8 @@ $faq = faq_items();
     </section>
     <section class="cfg-section" id="sec-reporting">
       <button type="button" class="cfg-section-head" data-section="reporting" aria-expanded="false" aria-controls="body-reporting">
-        <span class="cfg-section-label"><span class="cfg-icon">🚨</span> Reporting</span>
-        <span class="cfg-chevron" aria-hidden="true">▾</span>
+        <span class="cfg-section-label"><?= icon('bell', 'icon cfg-icon') ?> Reporting</span>
+        <?= icon('chevron-down', 'icon cfg-chevron') ?>
       </button>
       <div class="cfg-body" id="body-reporting">
         <div id="reporting-list"></div>
@@ -157,8 +151,8 @@ $faq = faq_items();
     </section>
     <section class="cfg-section" id="sec-advanced">
       <button type="button" class="cfg-section-head" data-section="advanced" aria-expanded="false" aria-controls="body-advanced">
-        <span class="cfg-section-label"><span class="cfg-icon">⚙️</span> Advanced</span>
-        <span class="cfg-chevron" aria-hidden="true">▾</span>
+        <span class="cfg-section-label"><?= icon('sliders', 'icon cfg-icon') ?> Advanced</span>
+        <?= icon('chevron-down', 'icon cfg-chevron') ?>
       </button>
       <div class="cfg-body" id="body-advanced">
         <div id="custom-list"></div>
@@ -182,17 +176,94 @@ $faq = faq_items();
 
   <!-- OUTPUT -->
   <div class="output" data-clarity-mask="true">
-    <div class="out-tabs" role="tablist" aria-label="Output">
-      <button type="button" class="otab active" role="tab" id="tab-header" data-tab="header" aria-selected="true" aria-controls="out-body" tabindex="0">Header</button>
-      <button type="button" class="otab" role="tab" id="tab-laravel" data-tab="laravel" aria-selected="false" aria-controls="out-body" tabindex="-1">Laravel</button>
-      <button type="button" class="otab" role="tab" id="tab-formats" data-tab="formats" aria-selected="false" aria-controls="out-body" tabindex="-1">Other formats</button>
-      <button type="button" class="otab" role="tab" id="tab-checklist" data-tab="checklist" aria-selected="false" aria-controls="out-body" tabindex="-1">Checklist</button>
-      <button type="button" class="otab" role="tab" id="tab-summary" data-tab="summary" aria-selected="false" aria-controls="out-body" tabindex="-1">Summary</button>
+    <div class="out-head">
+      <div class="out-tabs" role="tablist" aria-label="Output">
+        <button type="button" class="otab active" role="tab" id="tab-header" data-tab="header" aria-selected="true" aria-controls="out-body" tabindex="0">Header</button>
+        <button type="button" class="otab" role="tab" id="tab-laravel" data-tab="laravel" aria-selected="false" aria-controls="out-body" tabindex="-1">Laravel</button>
+        <button type="button" class="otab" role="tab" id="tab-formats" data-tab="formats" aria-selected="false" aria-controls="out-body" tabindex="-1">Other formats</button>
+        <button type="button" class="otab" role="tab" id="tab-checklist" data-tab="checklist" aria-selected="false" aria-controls="out-body" tabindex="-1">Checklist</button>
+        <button type="button" class="otab" role="tab" id="tab-summary" data-tab="summary" aria-selected="false" aria-controls="out-body" tabindex="-1">Summary</button>
+      </div>
+      <button type="button" class="kbd-btn" popovertarget="kbd-help" aria-label="Keyboard shortcuts" title="Keyboard shortcuts (?)"><?= icon('keyboard') ?></button>
+    </div>
+    <div class="kbd-help" id="kbd-help" popover>
+      <p class="kbd-title">Keyboard shortcuts</p>
+      <dl>
+        <dt><kbd>1</kbd> to <kbd>5</kbd></dt><dd>Switch output tab</dd>
+        <dt><kbd>c</kbd></dt><dd>Copy the output</dd>
+        <dt><kbd>/</kbd></dt><dd>Search integrations</dd>
+        <dt><kbd>?</kbd></dt><dd>Show this list</dd>
+        <dt><kbd>Ctrl</kbd> <kbd>Z</kbd></dt><dd>Undo a reset (<kbd>⌘</kbd> <kbd>Z</kbd> on a Mac)</dd>
+        <dt><kbd>Esc</kbd></dt><dd>Close it</dd>
+      </dl>
     </div>
     <div class="out-body" id="out-body" role="tabpanel" aria-labelledby="tab-header" tabindex="0"></div>
+    <div class="src-tip" id="src-tip" popover="manual" role="tooltip"></div>
   </div>
 
 </div><!-- /tool -->
+
+<div class="mbar" id="mbar" hidden>
+  <span class="mbar-grade score-chip"></span>
+  <span class="mbar-size score-chip"></span>
+  <a class="mbar-jump" href="#out-body">View output <?= icon('arrow-right') ?></a>
+</div>
+
+<!-- FEATURES -->
+<section class="features">
+  <div class="section-intro">
+    <div class="section-label">Why this tool</div>
+    <div class="section-title">Everything you need to ship secure</div>
+    <p class="section-sub">Not just a header builder - a complete workflow from configuration to deployment.</p>
+  </div>
+  <div class="feat-grid">
+    <div class="feat-card">
+      <div class="feat-icon"><?= icon('target') ?></div>
+      <div class="feat-title">Nonce-based by default</div>
+      <div class="feat-body">Every policy uses per-request nonces, never 'unsafe-inline' for scripts. The middleware generates the nonce, shares it with Blade and registers it with Vite.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon"><?= icon('plug') ?></div>
+      <div class="feat-title">27 integrations, explained</div>
+      <div class="feat-body">Stripe, PayPal, GA4, Intercom, Google Maps, Sentry and more. Every host comes with the reason it is needed, following each vendor's CSP documentation.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon"><?= icon('layers') ?></div>
+      <div class="feat-title">One config, two environments</div>
+      <div class="feat-body">Production and Local output from the same settings. The middleware branches on the environment, so the Vite dev server never reaches production.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon"><?= icon('gauge') ?></div>
+      <div class="feat-title">A score that explains itself</div>
+      <div class="feat-body">Every point lost is listed: 'unsafe-eval', CDNs that serve script gadgets, wildcard hosts, report-only mode. A size meter warns before nginx starts returning 502.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon"><?= icon('puzzle') ?></div>
+      <div class="feat-title">Laravel and beyond</div>
+      <div class="feat-body">Middleware, report controller and Pest test for Laravel, plus a spatie/laravel-csp preset, nginx, Apache and a meta tag.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon"><?= icon('list-checks') ?></div>
+      <div class="feat-title">A checklist that follows your stack</div>
+      <div class="feat-body">Livewire, Inertia, Filament, Cloudflare and full-page caching each add the steps they need. Tick them off as you go, and export a summary for your auditor.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon"><?= icon('search') ?></div>
+      <div class="feat-title">Import and explain</div>
+      <div class="feat-body">Paste your current header to start from it, or paste a console error or violation report to learn why it was blocked and fix it in one click.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon"><?= icon('code') ?></div>
+      <div class="feat-title">Find inline code</div>
+      <div class="feat-body">Scan Blade templates for inline scripts and styles without a nonce, onclick handlers, style attributes and javascript: links, with line numbers. Nothing leaves your browser.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon"><?= icon('radar') ?></div>
+      <div class="feat-title">Check what is live</div>
+      <div class="feat-body">Scan a page to see what it loads, or grade its deployed headers: duplicate CSP headers, a leaked X-Powered-By, missing HSTS, and how the live policy differs from yours.</div>
+    </div>
+  </div>
+</section>
 
 <!-- GUIDE CTA -->
 <div class="guide-section">
@@ -217,86 +288,25 @@ $faq = faq_items();
         </div>
         <span class="pdf-pages">4 pages</span>
       </div>
-      <div id="guide-form">
-        <div class="guide-form">
-          <div class="form-field">
-            <label class="form-label" for="g-name">First name</label>
-            <input class="form-input" id="g-name" type="text" placeholder="Your name" autocomplete="given-name" />
-          </div>
-          <div class="form-field">
-            <label class="form-label" for="g-email">Email address</label>
-            <input class="form-input" id="g-email" type="email" placeholder="you@yourapp.com" autocomplete="email" />
-          </div>
-          <input class="form-pot" id="g-pot" name="website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true" />
-          <button type="button" class="form-submit" data-action="submit-guide">Send me the PDF →</button>
-          <p class="form-privacy">We store your email to send the guide and occasional CSP updates. Unsubscribe any time.</p>
+      <form class="guide-form" id="guide-form" action="/save-email.php" method="post" novalidate>
+        <div class="form-field">
+          <label class="form-label" for="g-email">Email address</label>
+          <input class="form-input" id="g-email" name="email" type="email" placeholder="you@yourapp.com" autocomplete="email" required aria-describedby="g-error" data-clarity-mask="true">
+          <p class="form-error" id="g-error" role="alert"></p>
         </div>
-      </div>
-      <div class="guide-success is-hidden" id="guide-success">
-        <div class="success-icon">✓</div>
+        <input class="form-pot" id="g-pot" name="website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <button type="submit" class="form-submit">Send me the PDF <?= icon('arrow-right') ?></button>
+        <p class="form-privacy" id="g-privacy">We store your email to send the guide and occasional CSP updates. Unsubscribe any time.</p>
+      </form>
+      <div class="guide-success is-hidden" id="guide-success" tabindex="-1">
+        <div class="success-icon"><?= icon('check') ?></div>
         <div class="success-title">You're on the list</div>
         <div class="success-sub">Thanks for signing up. Download the guide below.</div>
-        <a class="download-btn" href="https://csp-generator.shakiltech.com/laravel-csp-guide.pdf" download>↓ Download PDF</a>
+        <a class="download-btn" href="https://csp-generator.shakiltech.com/laravel-csp-guide.pdf" download><?= icon('download') ?> Download PDF</a>
       </div>
     </div>
   </div>
 </div>
-
-<!-- FEATURES -->
-<section class="features">
-  <div class="section-intro">
-    <div class="section-label">Why this tool</div>
-    <div class="section-title">Everything you need to ship secure</div>
-    <p class="section-sub">Not just a header builder - a complete workflow from configuration to deployment.</p>
-  </div>
-  <div class="feat-grid">
-    <div class="feat-card">
-      <div class="feat-icon">🎯</div>
-      <div class="feat-title">Nonce-based by default</div>
-      <div class="feat-body">Every policy uses per-request nonces, never 'unsafe-inline' for scripts. The middleware generates the nonce, shares it with Blade and registers it with Vite.</div>
-    </div>
-    <div class="feat-card">
-      <div class="feat-icon">🔌</div>
-      <div class="feat-title">27 integrations, explained</div>
-      <div class="feat-body">Stripe, PayPal, GA4, Intercom, Google Maps, Sentry and more. Every host comes with the reason it is needed, following each vendor's CSP documentation.</div>
-    </div>
-    <div class="feat-card">
-      <div class="feat-icon">⚡</div>
-      <div class="feat-title">One config, two environments</div>
-      <div class="feat-body">Production and Local output from the same settings. The middleware branches on the environment, so the Vite dev server never reaches production.</div>
-    </div>
-    <div class="feat-card">
-      <div class="feat-icon">⚖️</div>
-      <div class="feat-title">A score that explains itself</div>
-      <div class="feat-body">Every point lost is listed: 'unsafe-eval', CDNs that serve script gadgets, wildcard hosts, report-only mode. A size meter warns before nginx starts returning 502.</div>
-    </div>
-    <div class="feat-card">
-      <div class="feat-icon">🧩</div>
-      <div class="feat-title">Laravel and beyond</div>
-      <div class="feat-body">Middleware, report controller and Pest test for Laravel, plus a spatie/laravel-csp preset, nginx, Apache and a meta tag.</div>
-    </div>
-    <div class="feat-card">
-      <div class="feat-icon">📋</div>
-      <div class="feat-title">A checklist that follows your stack</div>
-      <div class="feat-body">Livewire, Inertia, Filament, Cloudflare and full-page caching each add the steps they need. Tick them off as you go, and export a summary for your auditor.</div>
-    </div>
-    <div class="feat-card">
-      <div class="feat-icon">🔍</div>
-      <div class="feat-title">Import and explain</div>
-      <div class="feat-body">Paste your current header to start from it, or paste a console error or violation report to learn why it was blocked and fix it in one click.</div>
-    </div>
-    <div class="feat-card">
-      <div class="feat-icon">🧹</div>
-      <div class="feat-title">Find inline code</div>
-      <div class="feat-body">Scan Blade templates for inline scripts and styles without a nonce, onclick handlers, style attributes and javascript: links, with line numbers. Nothing leaves your browser.</div>
-    </div>
-    <div class="feat-card">
-      <div class="feat-icon">📡</div>
-      <div class="feat-title">Check what is live</div>
-      <div class="feat-body">Scan a page to see what it loads, or grade its deployed headers: duplicate CSP headers, a leaked X-Powered-By, missing HSTS, and how the live policy differs from yours.</div>
-    </div>
-  </div>
-</section>
 
 <!-- FAQ -->
 <section class="faq">
@@ -305,7 +315,7 @@ $faq = faq_items();
     <div class="section-title">FAQ</div>
   </div>
 <?php foreach ($faq as $item): ?>
-  <div class="faq-item"><button type="button" class="faq-q"><?= htmlspecialchars($item['q']) ?> <span class="faq-ch">▾</span></button><div class="faq-a"><?= $item['a_html'] ?></div></div>
+  <details class="faq-item" name="faq"><summary class="faq-q"><?= htmlspecialchars($item['q']) ?> <?= icon('chevron-down', 'icon faq-ch') ?></summary><div class="faq-a"><?= $item['a_html'] ?></div></details>
 <?php endforeach; ?>
 </section>
 
@@ -319,11 +329,13 @@ $faq = faq_items();
   <p class="footer-privacy">The generator runs in your browser. Nothing you configure is sent anywhere, except a URL you ask us to scan. Anonymous usage stats via Google Analytics and Microsoft Clarity.</p>
 </footer>
 
+<div id="announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
 <!-- TOOLS -->
 <dialog class="tool-dialog" id="tool-menu" aria-labelledby="tool-menu-title">
   <div class="tool-head">
     <h2 class="tool-title" id="tool-menu-title">Tools</h2>
-    <button type="button" class="tool-close" data-close aria-label="Close">×</button>
+    <button type="button" class="tool-close" data-close aria-label="Close"><?= icon('x') ?></button>
   </div>
   <div class="tool-body">
     <ul class="tool-list">
@@ -340,7 +352,7 @@ $faq = faq_items();
 <dialog class="tool-dialog" id="tool-import" aria-labelledby="tool-import-title">
   <div class="tool-head">
     <h2 class="tool-title" id="tool-import-title">Import a policy</h2>
-    <button type="button" class="tool-close" data-close aria-label="Close">×</button>
+    <button type="button" class="tool-close" data-close aria-label="Close"><?= icon('x') ?></button>
   </div>
   <div class="tool-body">
     <p class="tool-sub">Services it recognises are turned on. Hosts it does not recognise go to Advanced, and anything the generator does not model is listed so you can keep it in mind.</p>
@@ -353,7 +365,7 @@ $faq = faq_items();
 <dialog class="tool-dialog" id="tool-explain" aria-labelledby="tool-explain-title">
   <div class="tool-head">
     <h2 class="tool-title" id="tool-explain-title">Explain a violation</h2>
-    <button type="button" class="tool-close" data-close aria-label="Close">×</button>
+    <button type="button" class="tool-close" data-close aria-label="Close"><?= icon('x') ?></button>
   </div>
   <div class="tool-body">
     <label class="tool-label" for="explain-text">Console message or report JSON</label>
@@ -365,7 +377,7 @@ $faq = faq_items();
 <dialog class="tool-dialog" id="tool-blade" aria-labelledby="tool-blade-title">
   <div class="tool-head">
     <h2 class="tool-title" id="tool-blade-title">Find inline code</h2>
-    <button type="button" class="tool-close" data-close aria-label="Close">×</button>
+    <button type="button" class="tool-close" data-close aria-label="Close"><?= icon('x') ?></button>
   </div>
   <div class="tool-body">
     <p class="tool-sub">Nothing leaves your browser.</p>
@@ -383,7 +395,7 @@ $faq = faq_items();
 <dialog class="tool-dialog" id="tool-bookmarklet" aria-labelledby="tool-bookmarklet-title">
   <div class="tool-head">
     <h2 class="tool-title" id="tool-bookmarklet-title">Discovery bookmarklet</h2>
-    <button type="button" class="tool-close" data-close aria-label="Close">×</button>
+    <button type="button" class="tool-close" data-close aria-label="Close"><?= icon('x') ?></button>
   </div>
   <div class="tool-body">
     <p class="tool-sub">It runs in your browser on your site and sends the list here in the URL hash, which never reaches a server.</p>
@@ -398,7 +410,7 @@ $faq = faq_items();
 <dialog class="tool-dialog" id="tool-share" aria-labelledby="tool-share-title">
   <div class="tool-head">
     <h2 class="tool-title" id="tool-share-title">Share this config</h2>
-    <button type="button" class="tool-close" data-close aria-label="Close">×</button>
+    <button type="button" class="tool-close" data-close aria-label="Close"><?= icon('x') ?></button>
   </div>
   <div class="tool-body">
     <p class="tool-sub">Anyone who opens it is asked before it replaces their settings.</p>
@@ -412,7 +424,7 @@ $faq = faq_items();
 <dialog class="tool-dialog" id="tool-scan" aria-labelledby="tool-scan-title">
   <div class="tool-head">
     <h2 class="tool-title" id="tool-scan-title">Scan my site</h2>
-    <button type="button" class="tool-close" data-close aria-label="Close">×</button>
+    <button type="button" class="tool-close" data-close aria-label="Close"><?= icon('x') ?></button>
   </div>
   <div class="tool-body">
     <p class="tool-sub">We fetch the page HTML once (no scripts run, nothing is stored or logged), and your browser reads it. Up to 20 scans an hour.</p>
@@ -428,7 +440,7 @@ $faq = faq_items();
 <dialog class="tool-dialog" id="tool-headers" aria-labelledby="tool-headers-title">
   <div class="tool-head">
     <h2 class="tool-title" id="tool-headers-title">Check deployed headers</h2>
-    <button type="button" class="tool-close" data-close aria-label="Close">×</button>
+    <button type="button" class="tool-close" data-close aria-label="Close"><?= icon('x') ?></button>
   </div>
   <div class="tool-body">
     <p class="tool-sub">Compares the live headers with the Production policy you configured here.</p>
@@ -444,7 +456,7 @@ $faq = faq_items();
 <dialog class="tool-dialog" id="tool-shared" aria-labelledby="tool-shared-title">
   <div class="tool-head">
     <h2 class="tool-title" id="tool-shared-title">Load a shared config?</h2>
-    <button type="button" class="tool-close" data-close aria-label="Close">×</button>
+    <button type="button" class="tool-close" data-close aria-label="Close"><?= icon('x') ?></button>
   </div>
   <div class="tool-body">
     <div class="tool-result" id="shared-result" data-clarity-mask="true"></div>
@@ -454,7 +466,7 @@ $faq = faq_items();
 <dialog class="tool-dialog" id="tool-discover" aria-labelledby="tool-discover-title">
   <div class="tool-head">
     <h2 class="tool-title" id="tool-discover-title">What your site loads</h2>
-    <button type="button" class="tool-close" data-close aria-label="Close">×</button>
+    <button type="button" class="tool-close" data-close aria-label="Close"><?= icon('x') ?></button>
   </div>
   <div class="tool-body">
     <div class="tool-result" id="discover-result" data-clarity-mask="true"></div>

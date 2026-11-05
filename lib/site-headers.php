@@ -18,16 +18,16 @@ function site_nonce(): string
 
 function site_csp(string $nonce, string $origin): string
 {
-    // GA4 (gtag) and Microsoft Clarity are the only third parties; Google Fonts until fonts are self-hosted.
+    // GA4 (gtag) and Microsoft Clarity are the only third parties. Fonts are self-hosted.
     $ga      = 'https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com';
     $clarity = 'https://www.clarity.ms https://*.clarity.ms';
 
     $directives = [
         "default-src 'self'",
         "script-src 'self' 'nonce-{$nonce}' https://www.googletagmanager.com {$clarity}",
-        "style-src 'self' 'nonce-{$nonce}' https://fonts.googleapis.com",
+        "style-src 'self' 'nonce-{$nonce}'",
         "style-src-attr 'none'",
-        "font-src 'self' https://fonts.gstatic.com",
+        "font-src 'self'",
         "img-src 'self' data: {$ga} {$clarity} https://c.bing.com",
         "connect-src 'self' {$ga} {$clarity} https://c.bing.com",
         "manifest-src 'self'",

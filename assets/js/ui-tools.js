@@ -1,4 +1,5 @@
 // The Tools menu and its dialogs. Every result is built with DOM nodes and text, never parsed as HTML.
+import { copyWithFeedback } from './announce.js';
 import { INTEGRATION_BY_ID } from './integrations.js';
 import { CUSTOM_KINDS, sanitizeState } from './state.js';
 import { importPolicy, explainViolation } from './parse.js';
@@ -189,7 +190,7 @@ export function initTools(store) {
   $('[data-action="blade-copy"]').addEventListener('click', e => {
     const md = ['| Where | What | Snippet | Fix |', '|---|---|---|---|',
       ...findings.map(f => `| ${f.file}:${f.line} | ${BLADE_LABELS[f.kind]} | \`${f.snippet.replace(/[|`]/g, ' ')}\` | ${f.fix} |`)].join('\n');
-    navigator.clipboard.writeText(md).then(() => { e.target.textContent = 'Copied!'; }, err => console.error('Clipboard write failed', err));
+    copyWithFeedback(e.currentTarget, md, 'Findings');
   });
 
   // ── Bookmarklet ──
@@ -205,7 +206,7 @@ export function initTools(store) {
     $('#share-url').value = `${location.origin}/#${encodeShare(store.state)}`;
   });
   $('[data-action="share-copy"]').addEventListener('click', e => {
-    navigator.clipboard.writeText($('#share-url').value).then(() => { e.target.textContent = 'Copied!'; track('share_link'); }, err => console.error('Clipboard write failed', err));
+    copyWithFeedback(e.currentTarget, $('#share-url').value, 'Link').then(ok => { if (ok) track('share_link'); });
   });
 
   // ── Scan and header check (need the network) ──
