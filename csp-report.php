@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require __DIR__ . '/lib/csp-report.php';
+require __DIR__ . '/lib/rate-limit.php';
 
 const REPORT_LOG  = __DIR__ . '/data/csp-reports.log';
 const REPORT_RATE = __DIR__ . '/data/csp-rate.json';
@@ -13,7 +14,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST' || !in_array($type, ['applicat
     exit;
 }
 
-if (report_rate_limited(REPORT_RATE, $_SERVER['REMOTE_ADDR'] ?? '')) {
+if (rate_limited(REPORT_RATE, $_SERVER['REMOTE_ADDR'] ?? '', 30, 3600)) {
     http_response_code(429);
     exit;
 }

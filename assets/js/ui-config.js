@@ -4,9 +4,7 @@ import { CUSTOM_KINDS, MAX_EMBEDS, normalizeEmbedPath, normalizeEmbedOrigin } fr
 import { normalizeOrigin, normalizeSource, MAX_TAGS } from './sources.js';
 import { needsFor } from './policy.js';
 import { track } from './analytics.js';
-
-const $ = (sel, root = document) => root.querySelector(sel);
-const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
+import { $, $$, el } from './dom.js';
 
 const KIND_LABELS = {
   script: 'script-src', style: 'style-src', img: 'img-src', font: 'font-src', frame: 'frame-src',
@@ -17,17 +15,6 @@ const KIND_PLACEHOLDERS = {
   frame: 'https://video.example.com', connect: 'https://api.example.com', media: 'https://media.example.com', form: 'https://pay.example.com',
 };
 const NEED_LABELS = { unsafeEval: "needs 'unsafe-eval'", inlineStyleAttrs: 'needs inline style attributes', workerBlob: 'needs blob: workers' };
-
-function el(tag, attrs = {}, ...children) {
-  const node = document.createElement(tag);
-  for (const [k, v] of Object.entries(attrs)) {
-    if (k === 'class') node.className = v;
-    else if (k === 'dataset') Object.assign(node.dataset, v);
-    else node.setAttribute(k, v);
-  }
-  node.append(...children);
-  return node;
-}
 
 // A labelled on/off switch row. The returned row carries `.toggle` and an optional `.trow-needs` slot.
 function switchRow(cls, id, name, desc) {
