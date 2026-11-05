@@ -86,10 +86,14 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// HTML form POST
+// HTML form POST (the signup form without JavaScript). Same bot and repeat filters as the JSON path:
+// bots, rate-limited and already-listed addresses see the success page, but nothing is stored.
 $success = false;
 if (!$error) {
-    save_to_csv($name, $email);
+    $isBot = ($_POST['website'] ?? '') !== '';
+    if (!$isBot && !check_rate_limit() && !email_exists($email)) {
+        save_to_csv($name, $email);
+    }
     $success = true;
 }
 
