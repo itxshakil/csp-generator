@@ -3,9 +3,13 @@ import { track, clarityTag } from './analytics.js';
 import { $ } from './dom.js';
 import { emailError } from './signup.js';
 
-function showError(input, message) {
-  $('#g-error').textContent = message;
-  if (message) input.setAttribute('aria-invalid', 'true');
+// Only a validation error marks the field invalid; a server or network error is not the address's fault.
+// The text is cleared first, so the alert is read again when the same message repeats.
+function showError(input, message, invalid = Boolean(message)) {
+  const box = $('#g-error');
+  box.textContent = '';
+  if (message) requestAnimationFrame(() => { box.textContent = message; });
+  if (invalid) input.setAttribute('aria-invalid', 'true');
   else input.removeAttribute('aria-invalid');
 }
 
@@ -23,18 +27,27 @@ export function initSignup() {
     const label = [...btn.childNodes];
     btn.disabled = true;
     btn.textContent = 'Sending…';
+    let failure = null;
     try {
       const res = await fetch('/save-email.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: input.value.trim(), pot: $('#g-pot').value, ts: startedAt }),
       });
+      // Anything but {"ok": true} is a failure, including a 200 HTML page from a proxy or captive portal.
       const data = await res.json().catch(() => ({}));
-      if (!res.ok || data.ok === false) throw new Error(data.error || `The server answered ${res.status}.`);
+      if (!res.ok || data.ok !== true) {
+        failure = res.status === 422 && data.error
+          ? { message: data.error, invalid: true }
+          : { message: 'Something went wrong on our side. Please try again in a minute.', invalid: false };
+        console.error('Guide signup failed', res.status, data);
+      }
     } catch (err) {
       console.error('Guide signup failed', err);
-      const message = err instanceof TypeError ? 'Could not reach the server. Check your connection and try again.' : err.message;
-      showError(input, message.startsWith('The server answered') ? 'Something went wrong on our side. Please try again in a minute.' : message);
+      failure = { message: 'Could not reach the server. Check your connection and try again.', invalid: false };
+    }
+    if (failure) {
+      showError(input, failure.message, failure.invalid);
       btn.disabled = false;
       btn.replaceChildren(...label);
       return;
