@@ -4,7 +4,8 @@ import { CUSTOM_KINDS, MAX_EMBEDS, normalizeEmbedPath, normalizeEmbedOrigin } fr
 import { normalizeOrigin, normalizeSource, MAX_TAGS } from './sources.js';
 import { needsFor } from './policy.js';
 import { track } from './analytics.js';
-import { $, $$, el } from './dom.js';
+import { $, $$, el, replaceKeyed } from './dom.js';
+import { withTransition } from './motion.js';
 import { iconNode } from './icons.js';
 
 const KIND_LABELS = {
@@ -194,7 +195,7 @@ export function initConfig(store) {
   });
 
   // ── Presets, reset, sections ──
-  $$('[data-preset]').forEach(b => b.addEventListener('click', () => store.applyPreset(b.dataset.preset)));
+  $$('[data-preset]').forEach(b => b.addEventListener('click', () => withTransition(() => store.applyPreset(b.dataset.preset))));
   $('[data-action="reset"]').addEventListener('click', () => store.applyPreset(store.preset || 'strict', { reset: true }));
   $$('[data-section]').forEach(head => head.addEventListener('click', () => {
     const open = $('#sec-' + head.dataset.section).classList.toggle('open');
@@ -214,9 +215,9 @@ function sync(store) {
     const itemNeeds = INTEGRATION_BY_ID[row.dataset.id].needs ?? {};
     $('.trow-needs', row).textContent = on ? Object.keys(itemNeeds).map(k => NEED_LABELS[k]).join(' · ') : '';
   });
-  $('#int-chips').replaceChildren(...s.integrations.map(id => el('span', { class: 'chip', dataset: { id } },
+  replaceKeyed($('#int-chips'), s.integrations.map(id => el('span', { class: 'chip', dataset: { id } },
     INTEGRATION_BY_ID[id].name,
-    el('button', { type: 'button', class: 'chip-x', 'aria-label': `Remove ${INTEGRATION_BY_ID[id].name}` }, iconNode('x')))));
+    el('button', { type: 'button', class: 'chip-x', 'aria-label': `Remove ${INTEGRATION_BY_ID[id].name}` }, iconNode('x')))), n => n.dataset.id);
   const count = $('#count-integrations');
   count.textContent = s.integrations.length || '';
   count.classList.toggle('is-hidden', !s.integrations.length);
@@ -239,12 +240,12 @@ function sync(store) {
   $('#vite-block').hidden = !s.stack.includes('vite');
 
   for (const kind of CUSTOM_KINDS) {
-    $(`#tags-${kind}`).replaceChildren(...s.custom[kind].map(value => el('span', { class: 'dtag' }, value,
-      el('button', { type: 'button', class: 'dtag-x', dataset: { kind, value }, 'aria-label': `Remove ${value}` }, iconNode('x')))));
+    replaceKeyed($(`#tags-${kind}`), s.custom[kind].map(value => el('span', { class: 'dtag', dataset: { key: value } }, value,
+      el('button', { type: 'button', class: 'dtag-x', dataset: { kind, value }, 'aria-label': `Remove ${value}` }, iconNode('x')))), n => n.dataset.key);
   }
-  $('#embeds-list').replaceChildren(...s.embeds.map(e => el('li', { class: 'embed-row' },
+  replaceKeyed($('#embeds-list'), s.embeds.map(e => el('li', { class: 'embed-row', dataset: { key: e.path } },
     el('code', { class: 'code-plain' }, `/${e.path}`), ' ', el('span', { class: 'embed-origins' }, e.origins.join(' ')),
-    el('button', { type: 'button', class: 'dtag-x', dataset: { removeEmbed: e.path }, 'aria-label': `Remove /${e.path}` }, iconNode('x')))));
+    el('button', { type: 'button', class: 'dtag-x', dataset: { removeEmbed: e.path }, 'aria-label': `Remove /${e.path}` }, iconNode('x')))), n => n.dataset.key);
 
   $$('[data-preset]').forEach(b => b.setAttribute('aria-checked', String(b.dataset.preset === store.preset)));
 }
