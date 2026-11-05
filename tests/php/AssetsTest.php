@@ -8,7 +8,9 @@ return [
         preg_match_all('#(?:src|href)="(/assets/[^"]+)"#', $html, $m);
         assert_true(count($m[1]) >= 2, 'expected stylesheet and module script');
         foreach ($m[1] as $url) {
-            assert_true(preg_match('#\?v=\d+$#', $url) === 1, "unversioned asset: {$url}");
+            // Font files carry their upstream version in the name, so the stylesheet can point at them directly.
+            $versioned = preg_match('#\?v=\d+$#', $url) === 1 || preg_match('#^/assets/fonts/[a-z-]+-v\d+\.woff2$#', $url) === 1;
+            assert_true($versioned, "unversioned asset: {$url}");
         }
     },
     'an import map versions every module' => function () {

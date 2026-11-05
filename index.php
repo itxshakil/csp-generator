@@ -50,9 +50,7 @@ $faq = faq_items();
 <meta name="theme-color" content="#18151F"  media="(prefers-color-scheme: dark)">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Laravel CSP Generator","url":"https://csp-generator.shakiltech.com","description":"Free tool to generate production-ready Content Security Policy for Laravel","applicationCategory":"DeveloperApplication","operatingSystem":"Any","featureList":["Nonce-based CSP","27 third-party integrations","Production and local policies from one config","Explained policy score","Header size meter","Laravel middleware, spatie preset, nginx, Apache and meta tag output","Violation reporting","Import an existing header","Violation explainer","Blade inline code scanner","Live header check"],"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"creator":{"@type":"Person","name":"Shakil","url":"https://blog.shakiltech.com"}}</script>
 <script type="application/ld+json"><?= faq_jsonld($faq) ?></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" nonce="<?= $n ?>" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="preload" href="/assets/fonts/inter-latin-v20.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" nonce="<?= $n ?>" href="<?= asset_url('/assets/app.css') ?>">
 <script type="importmap" nonce="<?= $n ?>"><?= import_map_json() ?></script>
 <script type="module" nonce="<?= $n ?>" src="<?= asset_url('/assets/js/analytics.js') ?>"></script>
