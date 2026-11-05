@@ -405,3 +405,12 @@ footer{border-top:1px solid var(--border);background:var(--white);padding:1.75re
 .grade-item-warn .grade-badge{color:var(--amber);border-color:var(--amber-border);background:var(--amber-bg)}
 .grade-item-bad .grade-badge{color:var(--red);border-color:var(--red-border);background:var(--red-bg)}
 @media(max-width:600px){.tool-row{flex-direction:column;align-items:stretch}.config-head .config-title{flex:1}}
+
+/* ── Source tooltips ── */
+#pre-hdr [data-tip]{cursor:help;border-radius:3px;outline-offset:1px}
+#pre-hdr [data-tip]:hover,#pre-hdr [data-tip][aria-describedby]{background:var(--surface)}
+#pre-hdr [data-tip]:focus-visible{outline:2px solid var(--red)}
+.src-tip{position:fixed;inset:auto;margin:0;max-width:min(320px,calc(100vw - 16px));width:max-content;padding:0.5rem 0.7rem;border:1px solid var(--border2);border-radius:var(--r);background:var(--dark);color:var(--bg);font:0.75rem/1.5 var(--sans);white-space:pre-line;box-shadow:0 6px 20px var(--shadow-dialog);pointer-events:none}
+@supports (position-area: bottom){
+  .src-tip{position-anchor:--src;position-area:bottom;justify-self:anchor-center;margin-top:6px;position-try-fallbacks:flip-block}
+}

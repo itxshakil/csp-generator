@@ -3,6 +3,7 @@ import { buildDirectives, headerName, headerBytes, sizeLevel, scorePolicy, grade
 import * as F from './formats.js';
 import { checklistItems, summaryMarkdown, CHECKLIST_KEY } from './checklist.js';
 import { escapeHtml, highlightDirectives } from './highlight.js';
+import { initTooltips } from './tooltip.js';
 import { track, clarityTag } from './analytics.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -212,6 +213,7 @@ function download(id, name) {
 
 export function initOutput(store) {
   const body = $('#out-body');
+  initTooltips(body, $('#src-tip'));
 
   const render = () => {
     const s = store.state;

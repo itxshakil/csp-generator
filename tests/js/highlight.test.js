@@ -15,16 +15,28 @@ test('highlighting never changes the text', () => {
 test('each part gets its class', () => {
   const html = highlightDirectives(DIRS);
   assert.match(html, /<span class="sk">script-src<\/span>/);
-  assert.match(html, /<span class="sv" title="[^"]*">&#39;self&#39;<\/span>/);
-  assert.match(html, /<span class="sb" title="[^"]*">&#39;none&#39;<\/span>/);
-  assert.match(html, /<span class="sb" title="[^"]*">&#39;unsafe-eval&#39;<\/span>/);
-  assert.match(html, /<span class="sn" title="[^"]*">&#39;nonce-\{\$nonce\}&#39;<\/span>/);
-  assert.match(html, /<span class="su" title="[^"]*">wss:\/\/\*\.tawk\.to<\/span>/);
+  assert.match(html, /<span class="sv" tabindex="0" data-tip="[^"]*">&#39;self&#39;<\/span>/);
+  assert.match(html, /<span class="sb" tabindex="0" data-tip="[^"]*">&#39;none&#39;<\/span>/);
+  assert.match(html, /<span class="sb" tabindex="0" data-tip="[^"]*">&#39;unsafe-eval&#39;<\/span>/);
+  assert.match(html, /<span class="sn" tabindex="0" data-tip="[^"]*">&#39;nonce-\{\$nonce\}&#39;<\/span>/);
+  assert.match(html, /<span class="su" tabindex="0" data-tip="[^"]*">wss:\/\/\*\.tawk\.to<\/span>/);
   assert.match(html, /<span class="sk">upgrade-insecure-requests<\/span>/);
 });
 
-test('each source carries its reasons as a title', () => {
-  assert.ok(highlightDirectives(DIRS).includes('title="Tawk.to: Live chat connection"'));
+test('each source carries its reasons for the tooltip, not a title', () => {
+  const html = highlightDirectives(DIRS);
+  assert.ok(html.includes('data-tip="Tawk.to: Live chat connection"'));
+  assert.ok(!html.includes('title='));
+});
+
+test('a source with several reasons lists them all, one per line', () => {
+  const html = highlightDirectives([{ name: 'img-src', sources: ['https://a.com'], reasons: { 'https://a.com': ['One: x', 'Two: y'] } }]);
+  assert.ok(html.includes('data-tip="One: x\nTwo: y"'));
+});
+
+test('a source without reasons is plain text, not a focus stop', () => {
+  const html = highlightDirectives([{ name: 'img-src', sources: ['https://a.com'], reasons: {} }]);
+  assert.equal(html, '<span class="sk">img-src</span> <span class="su">https://a.com</span>');
 });
 
 test('values and reasons are escaped', () => {

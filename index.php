@@ -182,6 +182,7 @@ $faq = faq_items();
       <button type="button" class="otab" role="tab" id="tab-summary" data-tab="summary" aria-selected="false" aria-controls="out-body" tabindex="-1">Summary</button>
     </div>
     <div class="out-body" id="out-body" role="tabpanel" aria-labelledby="tab-header" tabindex="0"></div>
+    <div class="src-tip" id="src-tip" popover="manual" role="tooltip"></div>
   </div>
 
 </div><!-- /tool -->
