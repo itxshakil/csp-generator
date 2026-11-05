@@ -23,3 +23,8 @@ test('the tooltip flips above a trigger near the bottom', () => {
   const trigger = { top: 760, bottom: 780, left: 500, width: 100 };
   assert.equal(placeBelow(trigger, { width: 200, height: 60 }, VIEW).top, 760 - 60 - 6);
 });
+
+test('a tooltip taller than the room above and below stays on screen', () => {
+  const trigger = { top: 150, bottom: 170, left: 100, width: 50 };
+  assert.equal(placeBelow(trigger, { width: 200, height: 250 }, { width: 320, height: 300 }).top, 8);
+});
