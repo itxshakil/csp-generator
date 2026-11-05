@@ -4,6 +4,7 @@ import * as F from './formats.js';
 import { checklistItems, summaryMarkdown, CHECKLIST_KEY } from './checklist.js';
 import { escapeHtml, highlightDirectives } from './highlight.js';
 import { initTooltips } from './tooltip.js';
+import { withTransition } from './motion.js';
 import { track, clarityTag } from './analytics.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -13,6 +14,7 @@ const TABS = ['header', 'laravel', 'formats', 'checklist', 'summary'];
 let tab = 'header';
 let env = 'production';
 let lastGrade = '';
+let lastChecklist = null;
 // A secret token for the nginx sub_filter placeholder, fresh per visit. Letters and digits only.
 const NGINX_TOKEN = Array.from(crypto.getRandomValues(new Uint8Array(16)), b => 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'[b % 62]).join('');
 // Plain text behind every Copy and Download button, keyed by block id, so copies never pick up markup.
@@ -221,6 +223,12 @@ export function initOutput(store) {
     body.innerHTML = RENDERERS[tab](s);
     // Widths go through the CSSOM: style="" attributes are blocked by our own style-src-attr 'none'.
     $$('[data-width]', body).forEach(el => { el.style.width = el.dataset.width + '%'; });
+    // Only checklist rows that a config change added animate in, not every row on every render.
+    const ids = new Set($$('[data-check-id]', body).map(b => b.dataset.checkId));
+    if (tab === 'checklist' && lastChecklist) {
+      ids.forEach(id => { if (!lastChecklist.has(id)) $(`[data-check-id="${CSS.escape(id)}"]`, body).closest('.chk-row').classList.add('is-new'); });
+    }
+    lastChecklist = tab === 'checklist' ? ids : null;
     const g = grade(scorePolicy(s).score).label;
     if (g !== lastGrade) {
       lastGrade = g;
@@ -230,16 +238,22 @@ export function initOutput(store) {
   };
 
   const setTab = (next, focus = false) => {
-    tab = next;
-    $$('.otab').forEach(t => {
-      const on = t.dataset.tab === next;
-      t.classList.toggle('active', on);
-      t.setAttribute('aria-selected', String(on));
-      t.tabIndex = on ? 0 : -1;
-      if (on && focus) t.focus();
+    if (next === tab) {
+      if (focus) $(`#tab-${next}`).focus();
+      return;
+    }
+    withTransition(() => {
+      tab = next;
+      $$('.otab').forEach(t => {
+        const on = t.dataset.tab === next;
+        t.classList.toggle('active', on);
+        t.setAttribute('aria-selected', String(on));
+        t.tabIndex = on ? 0 : -1;
+        if (on && focus) t.focus();
+      });
+      body.setAttribute('aria-labelledby', `tab-${next}`);
+      render();
     });
-    body.setAttribute('aria-labelledby', `tab-${next}`);
-    render();
     track('switch_tab', { tab: next });
   };
 
