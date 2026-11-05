@@ -5,6 +5,7 @@ import { checklistItems, summaryMarkdown, CHECKLIST_KEY } from './checklist.js';
 import { escapeHtml, highlightDirectives } from './highlight.js';
 import { initTooltips } from './tooltip.js';
 import { withTransition } from './motion.js';
+import { sourceDiff, removedNote } from './diff.js';
 import { track, clarityTag } from './analytics.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -15,6 +16,10 @@ let tab = 'header';
 let env = 'production';
 let lastGrade = '';
 let lastChecklist = null;
+// The policy before the last change, per environment, and what that change did. A render that is not
+// caused by a change (tab or environment switch) shows no highlight.
+let previous = { production: null, local: null };
+let lastDiff = null;
 // A secret token for the nginx sub_filter placeholder, fresh per visit. Letters and digits only.
 const NGINX_TOKEN = Array.from(crypto.getRandomValues(new Uint8Array(16)), b => 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'[b % 62]).join('');
 // Plain text behind every Copy and Download button, keyed by block id, so copies never pick up markup.
@@ -66,6 +71,8 @@ function callout(level, html) {
 // ── Tabs ────────────────────────────────────────────────────────────────────
 function renderHeader(s) {
   const dirs = buildDirectives(s, env);
+  const diff = lastDiff;
+  const note = diff ? removedNote(diff.removed) : '';
   const { score, deductions } = scorePolicy(s);
   const g = grade(score);
   const bytes = headerBytes(s, env);
@@ -118,8 +125,9 @@ function renderHeader(s) {
         <span class="code-title">${escapeHtml(name)}</span>
         <div class="code-actions"><button type="button" class="cbtn" data-copy="hdr">Copy</button></div>
       </div>
-      <pre id="pre-hdr">${highlightDirectives(dirs)}</pre>
+      <pre id="pre-hdr">${highlightDirectives(dirs, diff?.added)}</pre>
     </div>
+    ${note ? `<p class="change-note">${escapeHtml(note)}</p>` : ''}
     ${s.reporting ? `
     <div class="code-block">
       <div class="code-hdr">
@@ -221,6 +229,7 @@ export function initOutput(store) {
     const s = store.state;
     texts.clear();
     body.innerHTML = RENDERERS[tab](s);
+    lastDiff = null;
     // Widths go through the CSSOM: style="" attributes are blocked by our own style-src-attr 'none'.
     $$('[data-width]', body).forEach(el => { el.style.width = el.dataset.width + '%'; });
     // Only checklist rows that a config change added animate in, not every row on every render.
@@ -299,6 +308,9 @@ export function initOutput(store) {
   });
 
   store.onChange(() => {
+    const next = { production: buildDirectives(store.state, 'production'), local: buildDirectives(store.state, 'local') };
+    lastDiff = sourceDiff(previous[env], next[env]);
+    previous = next;
     const active = document.activeElement;
     if (tab === 'summary' && active && body.contains(active) && active.type === 'date') {
       const md = summaryMarkdown(store.state);

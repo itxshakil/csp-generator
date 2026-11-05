@@ -430,3 +430,11 @@ footer{border-top:1px solid var(--border);background:var(--white);padding:1.75re
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
 }
+
+/* ── What the last change did ── */
+.change-note{margin-top:0.5rem;font-size:0.75rem;color:var(--light);font-family:var(--mono);overflow-wrap:anywhere}
+#pre-hdr .src-added{border-radius:3px;background:var(--amber-bg);box-shadow:0 0 0 1px var(--amber-border)}
+@media(prefers-reduced-motion:no-preference){
+  #pre-hdr .src-added{animation:src-added 1.6s ease-out forwards}
+}
+@keyframes src-added{0%,40%{background:var(--amber-bg);box-shadow:0 0 0 1px var(--amber-border)}100%{background:transparent;box-shadow:0 0 0 1px transparent}}
