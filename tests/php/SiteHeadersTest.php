@@ -11,7 +11,7 @@ return [
         assert_true($a !== site_nonce(), 'nonce must differ per call');
     },
     'site_csp is strict and complete' => function () {
-        $csp = site_csp('abc', 'https://x');
+        $csp = site_csp('abc');
         foreach ([
             "script-src 'self' 'nonce-abc'",
             "style-src-attr 'none'",
@@ -29,7 +29,7 @@ return [
         assert_true(!str_contains($csp, 'unsafe-eval'), 'must not contain unsafe-eval');
     },
     'site_csp loads fonts from our own origin only' => function () {
-        $csp = site_csp('abc', 'https://x');
+        $csp = site_csp('abc');
         assert_true(!str_contains($csp, 'fonts.googleapis.com'), 'no Google Fonts CSS');
         assert_true(!str_contains($csp, 'fonts.gstatic.com'), 'no Google Fonts files');
         assert_true(str_contains($csp, "font-src 'self';") || str_ends_with($csp, "font-src 'self'"), "font-src 'self' only");

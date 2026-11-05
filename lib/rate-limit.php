@@ -3,7 +3,8 @@
 declare(strict_types=1);
 
 // Fixed-window rate limit per visitor, stored in one JSON file under an exclusive lock.
-// Callers pass keys from rate_key(), an HMAC with a server secret, so the file never holds a reversible IP.
+// Keys are hashed before they are stored. scan.php passes rate_key(), an HMAC with a server secret, so its file
+// never holds a reversible IP.
 
 if (realpath($_SERVER['SCRIPT_FILENAME'] ?? '') === __FILE__) {
     http_response_code(404);
