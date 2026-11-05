@@ -10,7 +10,7 @@ export function placeBelow(trigger, tip, viewport, gap = 6) {
   const left = Math.max(EDGE, Math.min(centred, viewport.width - tip.width - EDGE));
   const below = trigger.bottom + gap;
   const top = below + tip.height > viewport.height - EDGE ? trigger.top - tip.height - gap : below;
-  return { top, left };
+  return { top: Math.max(EDGE, top), left };
 }
 
 export function initTooltips(root, tip) {
@@ -34,11 +34,28 @@ export function initTooltips(root, tip) {
     trigger.setAttribute('aria-describedby', tip.id);
     if (anchored) trigger.style.setProperty('anchor-name', '--src');
     tip.showPopover();
-    if (!anchored) {
-      const { top, left } = placeBelow(trigger.getBoundingClientRect(), tip.getBoundingClientRect(), { width: innerWidth, height: innerHeight });
-      tip.style.top = `${top}px`;
-      tip.style.left = `${left}px`;
-    }
+    place();
+  };
+
+  const viewport = () => ({ width: document.documentElement.clientWidth, height: document.documentElement.clientHeight });
+  // Anchored tooltips follow their source by themselves; the fallback is placed again.
+  const place = () => {
+    if (anchored || !current) return;
+    const { top, left } = placeBelow(current.getBoundingClientRect(), tip.getBoundingClientRect(), viewport());
+    tip.style.top = `${top}px`;
+    tip.style.left = `${left}px`;
+  };
+  // Scrolling keeps the tooltip while its source is visible, and closes it once the source leaves the screen
+  // or is scrolled out of the output panel.
+  const onScroll = () => {
+    if (!current) return;
+    const r = current.getBoundingClientRect();
+    const view = viewport();
+    const box = root.getBoundingClientRect();
+    const top = Math.max(0, box.top);
+    const bottom = Math.min(view.height, box.bottom);
+    if (r.bottom < top || r.top > bottom || r.right < 0 || r.left > view.width) hide();
+    else place();
   };
 
   const triggerOf = e => e.target.closest?.('[data-tip]');
@@ -65,7 +82,7 @@ export function initTooltips(root, tip) {
     press = null;
   });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') hide(); });
-  addEventListener('scroll', hide, { passive: true, capture: true });
+  addEventListener('scroll', onScroll, { passive: true, capture: true });
   // The output re-renders on every change, which removes the trigger.
   new MutationObserver(() => { if (current && !current.isConnected) hide(); }).observe(root, { childList: true });
 }
