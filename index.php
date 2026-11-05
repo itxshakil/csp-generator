@@ -19,20 +19,20 @@ $faq = faq_items();
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Laravel CSP Generator - Free Content Security Policy Builder</title>
 <meta name="description" content="Generate a production-ready Content Security Policy for your Laravel app from the services you use: Stripe, GA4, Intercom, Sentry and more. Nonce-based, explained, free.">
-<link rel="canonical" href="https://csp-generator.shakiltech.com">
+<link rel="canonical" href="<?= SITE_ORIGIN ?>">
 <meta property="og:title" content="Laravel CSP Generator">
 <meta property="og:description" content="Generate a production-ready CSP for your Laravel app from the services you use. Nonce-based, explained, free.">
-<meta property="og:url" content="https://csp-generator.shakiltech.com">
+<meta property="og:url" content="<?= SITE_ORIGIN ?>">
 <meta name="twitter:card" content="summary_large_image">
 <!-- Open Graph - complete set -->
 <meta property="og:type"        content="website">
 <meta property="og:site_name"   content="CSP Generator by Shakil">
-<meta property="og:image"       content="https://csp-generator.shakiltech.com/favicon.svg">
+<meta property="og:image"       content="<?= SITE_ORIGIN ?>/favicon.svg">
 <meta property="og:image:alt"   content="Laravel CSP Generator - Free Content Security Policy Builder">
 <!-- Twitter card - complete set -->
 <meta name="twitter:title"       content="Laravel CSP Generator - Free CSP Builder">
 <meta name="twitter:description" content="Generate a production-ready CSP for your Laravel app from the services you use. Nonce-based, explained, free.">
-<meta name="twitter:image"       content="https://csp-generator.shakiltech.com/favicon.svg">
+<meta name="twitter:image"       content="<?= SITE_ORIGIN ?>/favicon.svg">
 <meta name="twitter:image:alt"   content="Laravel CSP Generator">
 <!-- Favicon -->
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
@@ -48,7 +48,7 @@ $faq = faq_items();
 <!-- theme-color: dual light/dark -->
 <meta name="theme-color" content="#F8F7F4" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#18151F"  media="(prefers-color-scheme: dark)">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Laravel CSP Generator","url":"https://csp-generator.shakiltech.com","description":"Free tool to generate production-ready Content Security Policy for Laravel","applicationCategory":"DeveloperApplication","operatingSystem":"Any","featureList":["Nonce-based CSP","27 third-party integrations","Production and local policies from one config","Explained policy score","Header size meter","Laravel middleware, spatie preset, nginx, Apache and meta tag output","Violation reporting","Import an existing header","Violation explainer","Blade inline code scanner","Live header check"],"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"creator":{"@type":"Person","name":"Shakil","url":"https://blog.shakiltech.com"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Laravel CSP Generator","url":"<?= SITE_ORIGIN ?>","description":"Free tool to generate production-ready Content Security Policy for Laravel","applicationCategory":"DeveloperApplication","operatingSystem":"Any","featureList":["Nonce-based CSP","27 third-party integrations","Production and local policies from one config","Explained policy score","Header size meter","Laravel middleware, spatie preset, nginx, Apache and meta tag output","Violation reporting","Import an existing header","Violation explainer","Blade inline code scanner","Live header check"],"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"creator":{"@type":"Person","name":"Shakil","url":"https://blog.shakiltech.com"}}</script>
 <script type="application/ld+json"><?= faq_jsonld($faq) ?></script>
 <link rel="preload" href="/assets/fonts/inter-latin-v20.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" nonce="<?= $n ?>" href="<?= asset_url('/assets/app.css') ?>">
@@ -59,7 +59,7 @@ $faq = faq_items();
 <body>
 
 <nav>
-  <a class="logo" href="https://csp-generator.shakiltech.com">
+  <a class="logo" href="<?= SITE_ORIGIN ?>">
     <div class="logo-dot"></div>
     CSP Generator
   </a>
@@ -97,7 +97,7 @@ $faq = faq_items();
 
     <section class="cfg-section open" id="sec-integrations">
       <button type="button" class="cfg-section-head" data-section="integrations" aria-expanded="true" aria-controls="body-integrations">
-        <span class="cfg-section-label"><?= icon('plug', 'icon cfg-icon') ?> Integrations <span class="cfg-count is-hidden" id="count-integrations"></span></span>
+        <span class="cfg-section-label"><?= icon('plug', 'icon cfg-icon') ?> Integrations <span class="cfg-count" id="count-integrations" hidden></span></span>
         <?= icon('chevron-down', 'icon cfg-chevron') ?>
       </button>
       <div class="cfg-body" id="body-integrations">
@@ -298,11 +298,11 @@ $faq = faq_items();
         <button type="submit" class="form-submit">Send me the PDF <?= icon('arrow-right') ?></button>
         <p class="form-privacy" id="g-privacy">We store your email to send the guide and occasional CSP updates. Unsubscribe any time.</p>
       </form>
-      <div class="guide-success is-hidden" id="guide-success" tabindex="-1">
+      <div class="guide-success" id="guide-success" tabindex="-1" hidden>
         <div class="success-icon"><?= icon('check') ?></div>
         <div class="success-title">You're on the list</div>
         <div class="success-sub">Thanks for signing up. Download the guide below.</div>
-        <a class="download-btn" href="https://csp-generator.shakiltech.com/laravel-csp-guide.pdf" download><?= icon('download') ?> Download PDF</a>
+        <a class="download-btn" href="<?= SITE_ORIGIN ?>/laravel-csp-guide.pdf" download><?= icon('download') ?> Download PDF</a>
       </div>
     </div>
   </div>

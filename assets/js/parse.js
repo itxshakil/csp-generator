@@ -1,6 +1,6 @@
 // Reading untrusted text: existing policies and violation messages. Pure functions, no DOM.
 import { INTEGRATIONS } from './integrations.js';
-import { normalizeSource, covers } from './sources.js';
+import { normalizeSource, covers, urlOrigin } from './sources.js';
 import { CUSTOM_KINDS, DEFAULT_STATE, sanitizeState } from './state.js';
 import { buildDirectives } from './policy.js';
 
@@ -195,14 +195,7 @@ function kindOf(directive, verb) {
   return VERB_KIND.find(([re]) => re.test(verb))?.[1] ?? null;
 }
 
-function originOf(url) {
-  try {
-    const u = new URL(url);
-    return ['http:', 'https:', 'ws:', 'wss:'].includes(u.protocol) ? `${u.protocol}//${u.host}` : null;
-  } catch {
-    return null;
-  }
-}
+const originOf = url => urlOrigin(url)?.origin ?? null;
 
 // The most specific integration wins: a blocked player.vimeo.com frame is Vimeo, even though Intercom lists it too.
 export function findIntegration(kind, origin) {

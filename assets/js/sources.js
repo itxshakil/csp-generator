@@ -77,3 +77,13 @@ export function collapseSources(list) {
   const wildcards = unique.filter(s => parseHostSource(s)?.wildcard);
   return unique.filter(s => !wildcards.some(w => w !== s && covers(w, s)));
 }
+
+// The origin and full URL of a web or WebSocket URL, or null for anything else (data:, javascript:, junk).
+export function urlOrigin(value, base) {
+  try {
+    const u = new URL(value, base);
+    return ['http:', 'https:', 'ws:', 'wss:'].includes(u.protocol) ? { origin: u.origin, href: u.href } : null;
+  } catch {
+    return null;
+  }
+}

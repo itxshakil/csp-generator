@@ -1,6 +1,6 @@
 // The config panel. Builds its rows from the catalog and keeps them in sync with the store.
 import { CATEGORIES, INTEGRATIONS, INTEGRATION_BY_ID, STACK, HOSTING } from './integrations.js';
-import { CUSTOM_KINDS, MAX_EMBEDS, normalizeEmbedPath, normalizeEmbedOrigin } from './state.js';
+import { CUSTOM_KINDS, MAX_EMBEDS, MAX_EMBED_ORIGINS, KIND_DIRECTIVE, normalizeEmbedPath, normalizeEmbedOrigin } from './state.js';
 import { normalizeOrigin, normalizeSource, MAX_TAGS } from './sources.js';
 import { needsFor } from './policy.js';
 import { track } from './analytics.js';
@@ -8,15 +8,12 @@ import { $, $$, el, replaceKeyed } from './dom.js';
 import { withTransition } from './motion.js';
 import { iconNode } from './icons.js';
 
-const KIND_LABELS = {
-  script: 'script-src', style: 'style-src', img: 'img-src', font: 'font-src', frame: 'frame-src',
-  connect: 'connect-src', media: 'media-src', form: 'form-action', worker: 'worker-src',
-};
 const KIND_PLACEHOLDERS = {
   script: 'https://cdn.example.com', style: 'https://cdn.example.com', img: 'https://images.example.com', font: 'https://fonts.example.com',
   frame: 'https://video.example.com', connect: 'https://api.example.com', media: 'https://media.example.com', form: 'https://pay.example.com',
 };
 const NEED_LABELS = { unsafeEval: "needs 'unsafe-eval'", inlineStyleAttrs: 'needs inline style attributes', workerBlob: 'needs blob: workers' };
+const needsText = needs => Object.keys(needs).map(k => NEED_LABELS[k]).join(' · ');
 
 // A labelled on/off switch row. The returned row carries `.toggle` and an optional `.trow-needs` slot.
 function switchRow(cls, id, name, desc) {
@@ -34,7 +31,7 @@ const setSwitch = (row, on) => {
   row.querySelector('.toggle').setAttribute('aria-checked', String(on));
 };
 
-const integrationSummary = i => Object.keys(i.sources).map(k => KIND_LABELS[k]).join(', ');
+const integrationSummary = i => Object.keys(i.sources).map(k => KIND_DIRECTIVE[k]).join(', ');
 
 export function initConfig(store) {
   const toggleIn = (key, id) => store.update(s => {
@@ -95,7 +92,7 @@ export function initConfig(store) {
     switchRow('flag-row', 'reporting', 'Violation reporting', `Browsers send blocked-resource reports to your endpoint`));
   $('#style-attrs-row').append(switchRow('flag-row', 'inlineStyleAttrs', 'Allow inline style attributes', "Sets style-src-attr 'unsafe-inline'. Turn on only if something breaks without it"));
 
-  document.querySelector('.config').addEventListener('click', e => {
+  $('.config').addEventListener('click', e => {
     const toggle = e.target.closest('.toggle');
     if (!toggle) return;
     const row = toggle.closest('.trow');
@@ -120,10 +117,10 @@ export function initConfig(store) {
   const customList = $('#custom-list');
   for (const kind of CUSTOM_KINDS) {
     customList.append(el('div', { class: 'dir-block' },
-      el('div', { class: 'dir-lbl' }, el('span', { class: 'dir-name' }, KIND_LABELS[kind]), el('span', { class: 'dir-hint' }, 'Enter to add')),
+      el('div', { class: 'dir-lbl' }, el('span', { class: 'dir-name' }, KIND_DIRECTIVE[kind]), el('span', { class: 'dir-hint' }, 'Enter to add')),
       el('div', { class: 'tag-wrap', 'data-clarity-mask': 'true' },
         el('div', { class: 'tags-list', id: `tags-${kind}` }),
-        el('input', { class: 'tag-inp', placeholder: KIND_PLACEHOLDERS[kind], dataset: { kind }, 'aria-label': `Add a ${KIND_LABELS[kind]} host`, 'aria-describedby': `msg-${kind}`, autocomplete: 'off', spellcheck: 'false' })),
+        el('input', { class: 'tag-inp', placeholder: KIND_PLACEHOLDERS[kind], dataset: { kind }, 'aria-label': `Add a ${KIND_DIRECTIVE[kind]} host`, 'aria-describedby': `msg-${kind}`, autocomplete: 'off', spellcheck: 'false' })),
       el('p', { class: 'field-msg', id: `msg-${kind}`, 'aria-live': 'polite' })));
   }
   const showTagMessage = (kind, text, isError) => {
@@ -182,8 +179,8 @@ export function initConfig(store) {
     if (!existing && store.state.embeds.length >= MAX_EMBEDS) { embedMsg(`You can add up to ${MAX_EMBEDS} paths.`, true); return; }
     store.update(s => {
       const row = s.embeds.find(e => e.path === path.value);
-      if (row) row.origins = [...new Set([...row.origins, ...origins])].slice(0, 10);
-      else s.embeds.push({ path: path.value, origins: [...new Set(origins)].slice(0, 10) });
+      if (row) row.origins = [...new Set([...row.origins, ...origins])].slice(0, MAX_EMBED_ORIGINS);
+      else s.embeds.push({ path: path.value, origins: [...new Set(origins)].slice(0, MAX_EMBED_ORIGINS) });
     });
     $('#embed-path').value = '';
     $('#embed-origin').value = '';
@@ -212,20 +209,20 @@ function sync(store) {
     const on = s.integrations.includes(row.dataset.id);
     setSwitch(row, on);
     const itemNeeds = INTEGRATION_BY_ID[row.dataset.id].needs ?? {};
-    $('.trow-needs', row).textContent = on ? Object.keys(itemNeeds).map(k => NEED_LABELS[k]).join(' · ') : '';
+    $('.trow-needs', row).textContent = on ? needsText(itemNeeds) : '';
   });
   replaceKeyed($('#int-chips'), s.integrations.map(id => el('span', { class: 'chip', dataset: { id } },
     INTEGRATION_BY_ID[id].name,
     el('button', { type: 'button', class: 'chip-x', 'aria-label': `Remove ${INTEGRATION_BY_ID[id].name}` }, iconNode('x')))), n => n.dataset.id);
   const count = $('#count-integrations');
   count.textContent = s.integrations.length || '';
-  count.classList.toggle('is-hidden', !s.integrations.length);
+  count.hidden = !s.integrations.length;
 
   $$('.stack-row').forEach(row => {
     setSwitch(row, s.stack.includes(row.dataset.id));
     const itemNeeds = STACK.find(x => x.id === row.dataset.id).needs ?? {};
     const shown = s.stack.includes(row.dataset.id) && !(row.dataset.id === 'alpine' && s.stack.includes('alpineCsp'));
-    $('.trow-needs', row).textContent = shown ? Object.keys(itemNeeds).map(k => NEED_LABELS[k]).join(' · ') : '';
+    $('.trow-needs', row).textContent = shown ? needsText(itemNeeds) : '';
   });
   $('.stack-row[data-id="alpineCsp"]').hidden = !s.stack.includes('alpine');
   $$('.hosting-row').forEach(row => setSwitch(row, s.hosting.includes(row.dataset.id)));

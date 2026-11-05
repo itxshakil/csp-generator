@@ -14,11 +14,16 @@ export function el(tag, attrs = {}, ...children) {
   return node;
 }
 
-// Replaces a list's children and marks the items that were not there before with `is-new`, so CSS can animate
-// only real additions. The first render of a list marks nothing.
-export function replaceKeyed(container, nodes, keyOf) {
-  const before = container.dataset.keyed ? new Set([...container.children].map(keyOf)) : null;
+// Marks the nodes whose key was not in `before` with `is-new`, so CSS can animate only real additions, and
+// returns the keys now shown. `before` is null on a list's first render, which marks nothing.
+export function markNew(before, nodes, keyOf) {
   if (before) nodes.filter(n => !before.has(keyOf(n))).forEach(n => n.classList.add('is-new'));
+  return new Set(nodes.map(keyOf));
+}
+
+// Replaces a list's children, marking the items that were not there before.
+export function replaceKeyed(container, nodes, keyOf) {
+  markNew(container.dataset.keyed ? new Set([...container.children].map(keyOf)) : null, nodes, keyOf);
   container.replaceChildren(...nodes);
   container.dataset.keyed = 'true';
 }

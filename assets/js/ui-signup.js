@@ -53,7 +53,7 @@ export function initSignup() {
       return;
     }
     form.hidden = true;
-    $('#guide-success').classList.remove('is-hidden');
+    $('#guide-success').hidden = false;
     $('#guide-success').focus();
     track('guide_signup');
     clarityTag('lead', 'true');

@@ -4,7 +4,12 @@ import { normalizeOrigin, normalizeSource, MAX_TAGS } from './sources.js';
 
 export const CUSTOM_KINDS = ['script', 'style', 'img', 'font', 'frame', 'connect', 'media', 'form'];
 export const MAX_EMBEDS = 10;
-const MAX_EMBED_ORIGINS = 10;
+// The directive each custom-host kind (and the worker need) writes to.
+export const KIND_DIRECTIVE = {
+  script: 'script-src', style: 'style-src', img: 'img-src', font: 'font-src', frame: 'frame-src',
+  connect: 'connect-src', media: 'media-src', form: 'form-action', worker: 'worker-src',
+};
+export const MAX_EMBED_ORIGINS = 10;
 
 export const DEFAULT_STATE = Object.freeze({
   v: 2,
@@ -24,12 +29,10 @@ export const DEFAULT_STATE = Object.freeze({
 const STANDARD = { integrations: ['google-fonts', 'ga4'], stack: ['vite'], reportOnly: false, reporting: true, inlineStyleAttrs: false };
 
 export const PRESETS = {
-  strict: { integrations: [], stack: ['vite'], reportOnly: false, reporting: true, inlineStyleAttrs: false },
+  strict: { ...STANDARD, integrations: [] },
   standard: STANDARD,
   rollout: { ...STANDARD, reportOnly: true },
 };
-
-export const PRESET_LABELS = { strict: 'Strict', standard: 'Standard', rollout: 'Rollout' };
 
 // A preset sets the policy choices (integrations, stack, reporting, custom hosts) and keeps the facts about
 // your environment (hosting, full-page cache, embedding exceptions, Vite host, rollout dates).

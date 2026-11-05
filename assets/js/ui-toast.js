@@ -2,6 +2,7 @@
 // the next Tab stop, and Ctrl/Cmd+Z works while it is open. Hovering or focusing it pauses the countdown.
 import { $ } from './dom.js';
 import { announce } from './announce.js';
+import { isTyping } from './shortcuts.js';
 
 const UNDO_MS = 6000;
 const MAC = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
@@ -14,7 +15,7 @@ export function initUndoToast(store) {
   const startTimer = () => { clearTimeout(timer); timer = setTimeout(hide, UNDO_MS); };
   const hide = () => {
     clearTimeout(timer);
-    if (toast.matches(':popover-open')) toast.hidePopover();
+    if (isOpen()) toast.hidePopover();
   };
   const undo = () => {
     if (store.undo()) announce('Settings restored');
@@ -36,8 +37,7 @@ export function initUndoToast(store) {
   // Any other change ends the chance to undo, so the toast goes with it.
   store.onChange(() => { if (!store.canUndo) hide(); });
   document.addEventListener('keydown', e => {
-    const typing = e.target.closest?.('input, textarea, select, [contenteditable]');
-    if (!typing && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey && isOpen()) {
+    if (!isTyping(e.target) && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey && isOpen()) {
       e.preventDefault();
       undo();
     }

@@ -17,7 +17,8 @@ export function checklistItems(state) {
   if (stack('alpineCsp')) add('alpine-csp', 'todo', "Import Alpine from `@alpinejs/csp`. It has no arrow functions, template literals or globals in expressions");
   else if (stack('alpine')) add('alpine-csp', 'info', "Switch to `@alpinejs/csp` to drop `'unsafe-eval'` if your expressions are simple");
   if (stack('filament')) add('filament-style', 'warn', "Filament needs `'unsafe-inline'` in `style-src-attr` and `'unsafe-eval'` in `script-src`. Consider a separate, looser policy for the panel path only");
-  if (skippedPaths(state).length) add('dashboards-skip', 'info', `No CSP is sent on ${skippedPaths(state).map(p => '`/' + p.replace('*', '') + '`').join(', ')}. Keep those dashboards behind authentication`);
+  const skipped = skippedPaths(state);
+  if (skipped.length) add('dashboards-skip', 'info', `No CSP is sent on ${skipped.map(p => '`/' + p.replace('*', '') + '`').join(', ')}. Keep those dashboards behind authentication`);
   if (stack('debugbar')) add('debugbar', 'info', 'Debugbar 4.3+ reads `Vite::cspNonce()`. On older versions call `Debugbar::getJavascriptRenderer()->setCspNonce($nonce)`');
 
   if (host('cloudflare')) {

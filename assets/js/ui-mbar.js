@@ -1,9 +1,7 @@
 // Narrow screens stack the output below a long config panel. While the config is on screen and the output
 // is not, a bar at the bottom keeps the grade and size in view and jumps to the output.
 import { $ } from './dom.js';
-import { headerBytes, sizeLevel, scorePolicy, grade } from './policy.js';
-
-const SIZE_CLASS = { ok: 'grade-a', warn: 'grade-b', over: 'grade-d' };
+import { buildDirectives, headerBytes, sizeLevel, scorePolicy, grade, SIZE_CLASS } from './policy.js';
 
 export function initMobileBar(store) {
   const bar = $('#mbar');
@@ -12,8 +10,9 @@ export function initMobileBar(store) {
   let outputVisible = false;
 
   const fill = () => {
-    const g = grade(scorePolicy(store.state).score);
-    const bytes = headerBytes(store.state, 'production');
+    const dirs = buildDirectives(store.state, 'production');
+    const g = grade(scorePolicy(store.state, dirs).score);
+    const bytes = headerBytes(store.state, 'production', dirs);
     const gradeEl = $('.mbar-grade', bar);
     gradeEl.className = `mbar-grade score-chip ${g.cls}`;
     gradeEl.textContent = `Grade ${g.label}`;
@@ -21,8 +20,11 @@ export function initMobileBar(store) {
     sizeEl.className = `mbar-size score-chip ${SIZE_CLASS[sizeLevel(bytes)]}`;
     sizeEl.textContent = `${bytes.toLocaleString('en')} bytes`;
   };
+  // Filled only while visible: on desktop, or with the output on screen, it is never seen.
   const sync = () => {
-    bar.hidden = !(narrow.matches && configVisible && !outputVisible);
+    const show = narrow.matches && configVisible && !outputVisible;
+    if (show && bar.hidden) fill();
+    bar.hidden = !show;
     document.body.classList.toggle('has-mbar', !bar.hidden);
   };
 
@@ -42,6 +44,5 @@ export function initMobileBar(store) {
     $('.output').scrollIntoView({ block: 'start' });
     $('#out-body').focus({ preventScroll: true });
   });
-  store.onChange(fill);
-  fill();
+  store.onChange(() => { if (!bar.hidden) fill(); });
 }

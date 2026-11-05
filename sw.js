@@ -29,8 +29,8 @@ self.addEventListener('activate', e => {
   );
 });
 
-async function cacheFirst(request, cacheName) {
-  const cache = await caches.open(cacheName);
+async function cacheFirst(request) {
+  const cache = await caches.open(CACHE);
   const cached = await cache.match(request);
   if (cached) return cached;
   const res = await fetch(request);
@@ -65,7 +65,7 @@ self.addEventListener('fetch', e => {
     e.respondWith(networkFirst(request, '/'));
   } else if (url.pathname.startsWith('/assets/') && (url.searchParams.has('v') || url.pathname.startsWith('/assets/fonts/'))) {
     // Versioned URLs and font files (versioned in their names) never change, so the cache answers first.
-    e.respondWith(cacheFirst(request, CACHE));
+    e.respondWith(cacheFirst(request));
   } else {
     e.respondWith(networkFirst(request));
   }

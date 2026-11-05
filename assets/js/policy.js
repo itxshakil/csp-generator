@@ -3,12 +3,11 @@ import { INTEGRATIONS, STACK, HOSTING } from './integrations.js';
 import { normalizeOrigin, wsOrigin, collapseSources, covers } from './sources.js';
 import { DEFAULT_STATE } from './state.js';
 
-export const ENVS = ['production', 'local'];
 export const REPORT_PATH = '/csp-violation-report';
 export const REPORT_GROUP = 'csp-endpoint';
 
 const SELF = "'self'";
-const NONCE = "'nonce-{$nonce}'";
+export const NONCE = "'nonce-{$nonce}'";
 const UNSAFE_EVAL = "'unsafe-eval'";
 const UNSAFE_INLINE = "'unsafe-inline'";
 const DASHBOARDS = { telescope: 'telescope*', horizon: 'horizon*', pulse: 'pulse*' };
@@ -57,6 +56,7 @@ class SourceList {
     const reasons = {};
     for (const s of sources) {
       reasons[s] = [...this.reasons.get(s)];
+      if (!s.includes('://*.')) continue;
       for (const [other, otherReasons] of this.reasons) {
         if (other !== s && covers(s, other)) otherReasons.forEach(r => reasons[s].includes(r) || reasons[s].push(r));
       }
@@ -153,14 +153,17 @@ export function headerName(state) {
 
 const encoder = new TextEncoder();
 
-export function headerBytes(state, env = 'production') {
+// Callers that already built the directives pass them in, so one change builds the policy once.
+export function headerBytes(state, env = 'production', dirs = buildDirectives(state, env)) {
   // A real nonce is 24 base64 characters, not the 8-character template placeholder.
-  return encoder.encode(`${headerName(state)}: ${policyString(buildDirectives(state, env)).replaceAll('{$nonce}', 'x'.repeat(24))}`).length;
+  return encoder.encode(`${headerName(state)}: ${policyString(dirs).replaceAll('{$nonce}', 'x'.repeat(24))}`).length;
 }
 
 // 4 KB is the default proxy buffer in nginx-proxy-manager; 8 KB is a common hard limit for a single header line.
 export const SIZE_WARN = 4096;
 export const SIZE_OVER = 8192;
+
+export const SIZE_CLASS = { ok: 'grade-a', warn: 'grade-b', over: 'grade-d' };
 
 export function sizeLevel(bytes) {
   if (bytes > SIZE_OVER) return 'over';
@@ -172,8 +175,7 @@ export function sizeLevel(bytes) {
 const BYPASS_HOSTS = ['https://cdn.jsdelivr.net', 'https://cdnjs.cloudflare.com', 'https://unpkg.com', 'https://*.googleapis.com'];
 
 // Grades the production policy only. Every point lost is listed with the reason.
-export function scorePolicy(state) {
-  const dirs = buildDirectives(state, 'production');
+export function scorePolicy(state, dirs = buildDirectives(state, 'production')) {
   const script = dirs.find(d => d.name === 'script-src');
   const deductions = [];
   const deduct = (id, label, points) => deductions.push({ id, label, points });
@@ -185,19 +187,12 @@ export function scorePolicy(state) {
   if (dirs.find(d => d.name === 'style-src-attr').sources.includes(UNSAFE_INLINE)) {
     deduct('style-attr', "'unsafe-inline' in style-src-attr allows injected style attributes", 10);
   }
-  let bypass = 0;
-  for (const host of script.sources.filter(s => BYPASS_HOSTS.includes(s))) {
-    const points = Math.min(10, 30 - bypass);
-    if (points <= 0) break;
-    bypass += points;
-    deduct('bypass-host', `${host} in script-src serves code an attacker can reuse to bypass the policy`, points);
+  // At most three of each are counted, so these deductions are capped at 30 and 15 points.
+  for (const host of script.sources.filter(s => BYPASS_HOSTS.includes(s)).slice(0, 3)) {
+    deduct('bypass-host', `${host} in script-src serves code an attacker can reuse to bypass the policy`, 10);
   }
-  let wild = 0;
-  for (const host of script.sources.filter(s => s.includes('://*.') && !BYPASS_HOSTS.includes(s))) {
-    const points = Math.min(5, 15 - wild);
-    if (points <= 0) break;
-    wild += points;
-    deduct('wildcard', `${host} in script-src allows every subdomain`, points);
+  for (const host of script.sources.filter(s => s.includes('://*.') && !BYPASS_HOSTS.includes(s)).slice(0, 3)) {
+    deduct('wildcard', `${host} in script-src allows every subdomain`, 5);
   }
   if (state.reportOnly) deduct('report-only', 'Report-only mode: nothing is blocked yet', 20);
   if (!state.reporting) deduct('no-reporting', 'Reporting is off, so you will not see what breaks', 15);
