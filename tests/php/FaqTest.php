@@ -29,7 +29,7 @@ return [
     },
     'the page shows the same questions in the same order as the JSON-LD' => function () {
         [$html] = render_index();
-        preg_match_all('/<button type="button" class="faq-q">(.*?) <svg/s', $html, $m);
+        preg_match_all('/<summary class="faq-q">(.*?) <svg/s', $html, $m);
         $visible = array_map(fn ($q) => html_entity_decode($q, ENT_QUOTES | ENT_HTML5, 'UTF-8'), $m[1]);
         assert_same(array_column(faq_items(), 'q'), $visible);
         assert_true(str_contains($html, '"@type":"FAQPage"'), 'FAQ JSON-LD missing from page');

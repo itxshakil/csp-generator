@@ -292,7 +292,7 @@ $faq = faq_items();
     <div class="section-title">FAQ</div>
   </div>
 <?php foreach ($faq as $item): ?>
-  <div class="faq-item"><button type="button" class="faq-q"><?= htmlspecialchars($item['q']) ?> <?= icon('chevron-down', 'icon faq-ch') ?></button><div class="faq-a"><?= $item['a_html'] ?></div></div>
+  <details class="faq-item" name="faq"><summary class="faq-q"><?= htmlspecialchars($item['q']) ?> <?= icon('chevron-down', 'icon faq-ch') ?></summary><div class="faq-a"><?= $item['a_html'] ?></div></details>
 <?php endforeach; ?>
 </section>
 

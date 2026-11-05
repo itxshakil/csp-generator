@@ -33,4 +33,11 @@ return [
         $guide = strpos($html, 'class="guide-section"');
         assert_true($features !== false && $guide !== false && $features < $guide, 'features before the guide');
     },
+    'the FAQ is a set of exclusive details elements' => function () {
+        [$html] = render_index();
+        $count = count(faq_items());
+        assert_same($count, substr_count($html, '<details class="faq-item" name="faq">'), 'one details per question');
+        assert_same($count, substr_count($html, '<summary class="faq-q">'), 'one summary per question');
+        assert_true(!str_contains($html, '<button type="button" class="faq-q"'), 'no FAQ buttons');
+    },
 ];

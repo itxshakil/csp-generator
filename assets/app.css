@@ -6,6 +6,7 @@
 pre,code,.text-inp,.tag-inp,.dtag{font-variant-ligatures:none}
 :root{
   color-scheme:light dark;
+  interpolate-size:allow-keywords;
   --bg:light-dark(#F8F7F4, #18151F);
   --white:light-dark(#FFFFFF, #211E2A);
   --surface:light-dark(#F2F1EE, #2A2635);
@@ -227,12 +228,17 @@ pre{padding:0.9rem 1rem;font-family:var(--mono);font-size:0.76rem;line-height:1.
 /* ── FAQ ── */
 .faq{max-width:680px;margin:0 auto;padding:0 1.5rem 4rem}
 .faq-item{background:var(--white);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;margin-bottom:0.5rem;transition:border-color .2s ease,background .2s ease,box-shadow .2s ease}
-.faq-q{width:100%;display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;background:none;border:none;cursor:pointer;color:var(--dark);font-family:var(--sans);font-size:0.9rem;font-weight:500;text-align:left;transition:background 0.15s}
+.faq-q{list-style:none;width:100%;display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;background:none;border:none;cursor:pointer;color:var(--dark);font-family:var(--sans);font-size:0.9rem;font-weight:500;text-align:left;transition:background 0.15s}
 .faq-q:hover{background:var(--surface)}
 .faq-ch{color:var(--light);transition:transform 0.2s;flex-shrink:0;margin-left:0.5rem;font-size:1rem}
-.faq-item.open .faq-ch{transform:rotate(180deg)}
-.faq-a{display:none;padding:0 1.25rem 1rem;font-size:0.85rem;color:var(--mid);line-height:1.65;border-top:1px solid var(--border);padding-top:0.85rem}
-.faq-item.open .faq-a{display:block}
+.faq-q::-webkit-details-marker{display:none}
+.faq-q:focus-visible{outline:2px solid var(--red);outline-offset:-2px;border-radius:var(--r-lg)}
+.faq-item[open] .faq-ch{transform:rotate(180deg)}
+.faq-a{padding:0 1.25rem 1rem;font-size:0.85rem;color:var(--mid);line-height:1.65;border-top:1px solid var(--border);padding-top:0.85rem}
+@media(prefers-reduced-motion:no-preference){
+  .faq-item::details-content{block-size:0;overflow:clip;transition:block-size .25s ease,content-visibility .25s allow-discrete}
+  .faq-item[open]::details-content{block-size:auto}
+}
 .faq-a code{font-family:var(--mono);font-size:0.8rem;background:var(--red-bg);color:var(--red);padding:0.1rem 0.35rem;border-radius:4px}
 
 /* ── Footer ── */
