@@ -1,11 +1,13 @@
 // Boot: owns the live state, persistence, and the page-level widgets. Panels get the store passed in.
-import { DEFAULT_STATE, applyPreset, sanitizeState } from './state.js';
+import { sanitizeState } from './state.js';
+import { createStore } from './store.js';
 import { track, clarityTag } from './analytics.js';
 import { initConfig } from './ui-config.js';
 import { initOutput } from './ui-output.js';
 import { initTools } from './ui-tools.js';
 import { initSignup } from './ui-signup.js';
 import { shortcutFor } from './shortcuts.js';
+import { initUndoToast } from './ui-toast.js';
 
 const STORAGE_KEY = 'csp-state';
 
@@ -15,28 +17,6 @@ function save(state) {
   } catch (e) {
     console.warn('Could not save settings to localStorage', e);
   }
-}
-
-function createStore() {
-  const listeners = [];
-  const store = {
-    state: structuredClone(DEFAULT_STATE),
-    preset: '',
-    onChange(fn) { listeners.push(fn); },
-    // Every user change goes through here. Inputs are validated where they are typed, so the mutator never sees junk.
-    update(mutator, preset = '') {
-      mutator(store.state);
-      store.preset = preset;
-      save(store.state);
-      listeners.forEach(fn => fn());
-    },
-    applyPreset(name, options) {
-      store.update(s => Object.assign(s, applyPreset(s, name, options)), name);
-      track('select_preset', { preset: name });
-      clarityTag('preset', name);
-    },
-  };
-  return store;
 }
 
 // Returns true when saved settings were found and loaded.
@@ -82,7 +62,13 @@ function wireShortcuts(output) {
   });
 }
 
-const store = createStore();
+const store = createStore({
+  save,
+  onPreset(name) {
+    track('select_preset', { preset: name });
+    clarityTag('preset', name);
+  },
+});
 const restored = restore(store);
 initConfig(store);
 const output = initOutput(store);
@@ -91,6 +77,7 @@ initSignup();
 if (restored) store.update(() => {});
 else store.applyPreset('strict');
 initTools(store);
+initUndoToast(store);
 wireShortcuts(output);
 
 if ('serviceWorker' in navigator) {
