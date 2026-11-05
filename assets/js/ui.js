@@ -1,14 +1,16 @@
 // Boot: owns the live state, persistence, and the page-level widgets. Panels get the store passed in.
-import { DEFAULT_STATE, applyPreset, sanitizeState } from './state.js';
+import { sanitizeState } from './state.js';
+import { createStore } from './store.js';
 import { track, clarityTag } from './analytics.js';
 import { initConfig } from './ui-config.js';
 import { initOutput } from './ui-output.js';
 import { initTools } from './ui-tools.js';
+import { initSignup } from './ui-signup.js';
+import { shortcutFor } from './shortcuts.js';
+import { initUndoToast } from './ui-toast.js';
+import { initMobileBar } from './ui-mbar.js';
 
 const STORAGE_KEY = 'csp-state';
-const formStartedAt = Date.now();
-const $ = (sel, root = document) => root.querySelector(sel);
-const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
 function save(state) {
   try {
@@ -16,28 +18,6 @@ function save(state) {
   } catch (e) {
     console.warn('Could not save settings to localStorage', e);
   }
-}
-
-function createStore() {
-  const listeners = [];
-  const store = {
-    state: structuredClone(DEFAULT_STATE),
-    preset: '',
-    onChange(fn) { listeners.push(fn); },
-    // Every user change goes through here. Inputs are validated where they are typed, so the mutator never sees junk.
-    update(mutator, preset = '') {
-      mutator(store.state);
-      store.preset = preset;
-      save(store.state);
-      listeners.forEach(fn => fn());
-    },
-    applyPreset(name, options) {
-      store.update(s => Object.assign(s, applyPreset(s, name, options)), name);
-      track('select_preset', { preset: name });
-      clarityTag('preset', name);
-    },
-  };
-  return store;
 }
 
 // Returns true when saved settings were found and loaded.
@@ -61,53 +41,46 @@ function restore(store) {
   return true;
 }
 
-// ── Guide form ──────────────────────────────────────────────────────────────
-async function submitGuide(btn) {
-  const emailEl = $('#g-email');
-  const email = emailEl.value;
-  const name = $('#g-name').value || 'Friend';
-  const pot = $('#g-pot').value;
-  if (!email || !email.includes('@')) {
-    emailEl.classList.add('is-invalid');
-    return;
-  }
-  btn.disabled = true;
-  btn.textContent = 'Sending…';
-  try {
-    const res = await fetch('/save-email.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, pot, ts: formStartedAt }),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok || data.ok === false) throw new Error(data.error || 'Request failed');
-  } catch (e) {
-    console.error('Guide signup failed', e);
-    btn.disabled = false;
-    btn.textContent = 'Send me the PDF →';
-    emailEl.classList.add('is-invalid');
-    return;
-  }
-  $('#guide-form').classList.add('is-hidden');
-  $('#guide-success').classList.remove('is-hidden');
-  track('guide_signup');
-  clarityTag('lead', 'true');
+function focusSearch() {
+  const head = document.querySelector('#sec-integrations .cfg-section-head');
+  if (head.getAttribute('aria-expanded') === 'false') head.click();
+  const search = document.querySelector('#int-search');
+  search.focus({ preventScroll: true });
+  search.scrollIntoView({ block: 'center' });
 }
 
-function wirePage() {
-  $$('.faq-q').forEach(b => b.addEventListener('click', () => b.closest('.faq-item').classList.toggle('open')));
-  $('[data-action="submit-guide"]').addEventListener('click', e => submitGuide(e.currentTarget));
+function wireShortcuts(output) {
+  const help = document.querySelector('#kbd-help');
+  document.addEventListener('keydown', e => {
+    const action = shortcutFor(e, Boolean(document.querySelector('dialog[open]')));
+    if (!action) return;
+    e.preventDefault();
+    if (action.type === 'tab') output.setTab(action.tab);
+    else if (action.type === 'copy') output.copyActive();
+    else if (action.type === 'search') focusSearch();
+    else if (action.type === 'help') help.togglePopover();
+    track('shortcut', { action: action.type });
+  });
 }
 
-const store = createStore();
+const store = createStore({
+  save,
+  onPreset(name) {
+    track('select_preset', { preset: name });
+    clarityTag('preset', name);
+  },
+});
 const restored = restore(store);
 initConfig(store);
-initOutput(store);
-wirePage();
+const output = initOutput(store);
+initSignup();
 // Restored settings are saved straight back, which rewrites old (v1) or tampered values in the clean v2 shape.
 if (restored) store.update(() => {});
 else store.applyPreset('strict');
 initTools(store);
+initUndoToast(store);
+initMobileBar(store);
+wireShortcuts(output);
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {

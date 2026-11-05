@@ -28,6 +28,17 @@ return [
         assert_true(!str_contains($csp, 'unsafe-inline'), 'must not contain unsafe-inline');
         assert_true(!str_contains($csp, 'unsafe-eval'), 'must not contain unsafe-eval');
     },
+    'site_csp loads fonts from our own origin only' => function () {
+        $csp = site_csp('abc', 'https://x');
+        assert_true(!str_contains($csp, 'fonts.googleapis.com'), 'no Google Fonts CSS');
+        assert_true(!str_contains($csp, 'fonts.gstatic.com'), 'no Google Fonts files');
+        assert_true(str_contains($csp, "font-src 'self';") || str_ends_with($csp, "font-src 'self'"), "font-src 'self' only");
+    },
+    'index.php preloads the self-hosted font and links no Google Fonts' => function () {
+        [$html] = render_index();
+        assert_true(!str_contains($html, 'fonts.googleapis.com') && !str_contains($html, 'fonts.gstatic.com'), 'no Google Fonts');
+        assert_true(preg_match('#<link rel="preload" href="/assets/fonts/inter-latin-v20\.woff2" as="font" type="font/woff2" crossorigin>#', $html) === 1, 'Inter is preloaded');
+    },
     'index.php has no inline handlers, style attributes, or un-nonced scripts' => function () {
         [$html, $nonce] = render_index();
         assert_true(is_string($nonce) && $nonce !== '', 'index.php must expose $nonce');
