@@ -322,6 +322,11 @@ $faq = faq_items();
 
 <div id="announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 
+<div class="toast" id="toast" popover="manual" role="status">
+  <span>Settings reset.</span>
+  <button type="button" class="toast-undo">Undo</button>
+</div>
+
 <!-- TOOLS -->
 <dialog class="tool-dialog" id="tool-menu" aria-labelledby="tool-menu-title">
   <div class="tool-head">
