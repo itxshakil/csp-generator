@@ -306,6 +306,7 @@ footer{border-top:1px solid var(--border);background:var(--white);padding:1.75re
 .tag-inp[aria-invalid="true"]{color:var(--red)}
 .footer-privacy{font-size:0.74rem;color:var(--light);margin-top:0.5rem}
 .faq-a code{white-space:nowrap}
+@media(max-width:600px){.faq-a code{white-space:normal;overflow-wrap:anywhere}}
 .tool>*{min-width:0}
 .logo,.nav-link{white-space:nowrap}
 .dir-lbl{gap:0.75rem}
