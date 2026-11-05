@@ -88,6 +88,10 @@ $faq = faq_items();
       <div class="config-actions">
         <button type="button" class="config-reset" data-action="tools" aria-haspopup="dialog">Tools</button>
         <button type="button" class="config-reset" data-action="reset"><?= icon('rotate-ccw') ?> Reset</button>
+        <div class="toast" id="toast" popover="manual" role="status">
+          <span>Settings reset.</span>
+          <button type="button" class="toast-undo">Undo</button>
+        </div>
       </div>
     </div>
 
@@ -189,6 +193,7 @@ $faq = faq_items();
         <dt><kbd>c</kbd></dt><dd>Copy the output</dd>
         <dt><kbd>/</kbd></dt><dd>Search integrations</dd>
         <dt><kbd>?</kbd></dt><dd>Show this list</dd>
+        <dt><kbd>Ctrl</kbd> <kbd>Z</kbd></dt><dd>Undo a reset (<kbd>⌘</kbd> <kbd>Z</kbd> on a Mac)</dd>
         <dt><kbd>Esc</kbd></dt><dd>Close it</dd>
       </dl>
     </div>
@@ -325,11 +330,6 @@ $faq = faq_items();
 </footer>
 
 <div id="announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
-
-<div class="toast" id="toast" popover="manual" role="status">
-  <span>Settings reset.</span>
-  <button type="button" class="toast-undo">Undo</button>
-</div>
 
 <!-- TOOLS -->
 <dialog class="tool-dialog" id="tool-menu" aria-labelledby="tool-menu-title">
